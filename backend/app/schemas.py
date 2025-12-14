@@ -13,3 +13,7 @@ class User(BaseModel):
 class UserCreate(User):
     id: UUID | None = None
     password: str
+
+
+class UserLogin(User):
+    password: str
