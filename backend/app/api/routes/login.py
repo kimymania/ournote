@@ -17,9 +17,8 @@ async def signup(
     password: Annotated[str, Form(...)],
     db: SessionDep,
 ):
-    result = get_username_match(db, username)
-    if result is not None:
-        return HTTPException(status_code=status.HTTP_409_CONFLICT)
+    if get_username_match(db, username):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT)
 
     user = UserCreate(username=username, password=hash_password(password))
     data = UserDB(username=user.username, password=user.password)
