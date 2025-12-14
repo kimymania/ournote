@@ -44,3 +44,9 @@ async def login(
         secure=True,
     )
     return user
+
+
+@router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie(key="Authorization")
+    return {"status": "logged out"}
