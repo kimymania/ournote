@@ -8,3 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Files generated for local tests
+local.db
