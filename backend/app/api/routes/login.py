@@ -2,7 +2,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Response, status
 
-from app.api.dependencies import SessionDep
+from app.api.dependencies import SessionDep, get_auth_user
+from app.cache import remove_session, store_session
 from app.core.security import generate_session_id, hash_password
 from app.crud import authenticate_user, create_user, get_username_match
 from app.models import Users as UserDB
@@ -35,7 +36,7 @@ async def login(
     response: Response,
 ):
     credentials = UserLogin(username=username, password=password)
-    user = authenticate_user(db, credentials)
+    result = authenticate_user(db, credentials)
     response.set_cookie(
         key="Authorization",
         value=session_id,
@@ -43,10 +44,15 @@ async def login(
         httponly=True,
         secure=True,
     )
+
+    await store_session(session_id, result.id)
+    user = User(username=username)
+
     return user
 
 
 @router.post("/logout")
-async def logout(response: Response):
+async def logout(session_id: Annotated[str, Depends(get_auth_user)], response: Response):
+    await remove_session(session_id)
     response.delete_cookie(key="Authorization")
     return {"status": "logged out"}

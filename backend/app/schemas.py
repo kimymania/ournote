@@ -17,3 +17,8 @@ class UserCreate(User):
 
 class UserLogin(User):
     password: str
+
+
+class UserPrivate(User):
+    id: UUID
+    password: str
