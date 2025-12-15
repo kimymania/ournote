@@ -19,7 +19,7 @@ class Users(Base):
     __tablename__ = "users"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(), primary_key=True, default=lambda: uuid.uuid4())
-    username: Mapped[str] = mapped_column(String(30), unique=True)
+    username: Mapped[str] = mapped_column(String(32), unique=True)
     password: Mapped[str] = mapped_column(String(128), nullable=False)
     rooms: Mapped[list[Rooms]] = relationship(secondary=room_membership, back_populates="members")
 
@@ -37,7 +37,7 @@ class Items(Base):
     __tablename__ = "items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    title: Mapped[str] = mapped_column(String(30))
+    title: Mapped[str] = mapped_column(String(32))
     content: Mapped[str] = mapped_column(String())
     room_id: Mapped[str] = mapped_column(String(8), ForeignKey("rooms.id", ondelete="CASCADE"))
 
