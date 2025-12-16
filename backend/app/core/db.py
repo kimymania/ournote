@@ -10,5 +10,7 @@ class Base(DeclarativeBase):
     pass
 
 
-def init_db():
+def init_db(**kwargs):
+    if "engine" in kwargs.keys():
+        Base.metadata.create_all(bind=kwargs["engine"])
     Base.metadata.create_all(bind=engine)

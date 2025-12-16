@@ -11,3 +11,4 @@ wheels/
 
 # Files generated for local tests
 local.db
+test.db
