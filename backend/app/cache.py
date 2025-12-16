@@ -5,11 +5,13 @@ import string
 from functools import lru_cache
 from uuid import UUID
 
+from fastapi import HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import Session
 
 from app.core.db import engine
-from app.models import Rooms, Users
+from app.dbmodels import Rooms, Users
 
 # Replace with an actual cache database
 SESSION_DB = {}
@@ -23,11 +25,23 @@ async def remove_session(session_id: str) -> None:
     SESSION_DB.pop(session_id)
 
 
+async def get_user_id(session_id: str) -> UUID:
+    return SESSION_DB[session_id]
+
+
 @lru_cache
 def get_id_by_username(username: str) -> UUID:
+    """Get user ID for internal use
+
+    Raises a 500 error if User ID isn't found, but this shouldn't actually happen"""
     with Session(engine) as session:
         stmt = select(Users.id).where(Users.username == username)
-        user_id = session.execute(stmt).scalar_one()
+        try:
+            user_id = session.execute(stmt).scalar_one()
+        except NoResultFound as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"can't find id of {username}: {e}"
+            )
         return user_id
 
 

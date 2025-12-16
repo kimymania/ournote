@@ -19,21 +19,25 @@ class UserCreate(User):
     password: str
 
 
-class UserLogin(User):
-    password: str
-
-
 class UserPrivate(User):
     id: UUID
     password: str
+
+
+class UserPublic(User):
+    rooms: List[Room] | None = None
 
 
 class Room(GlobalBase):
     id: str
 
 
-class RoomCreate(Room):
+class RoomPrivate(Room):
     password: str
+
+
+class RoomPublic(Room):
+    items: List[Item] = []
 
 
 class RoomsList(GlobalBase):

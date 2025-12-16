@@ -6,11 +6,11 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Response, status
 from pydantic import Field
 
 from app.api.dependencies import SessionDep, get_auth_user
-from app.cache import remove_session, store_session
+from app.cache import get_id_by_username, remove_session, store_session
 from app.core.security import generate_session_id, hash_password
 from app.crud import authenticate_user, create_db, get_username_match
-from app.models import Users as UserDB
-from app.schemas import User, UserCreate, UserLogin
+from app.dbmodels import Users as UserDB
+from app.schemas import User, UserCreate, UserPrivate
 
 router = APIRouter(tags=["login"])
 
@@ -38,7 +38,8 @@ async def login(
     db: SessionDep,
     response: Response,
 ):
-    credentials = UserLogin(username=username, password=password)
+    user_id = get_id_by_username(username)
+    credentials = UserPrivate(id=user_id, username=username, password=password)
     result = authenticate_user(db, credentials)
     response.set_cookie(
         key="Authorization",
