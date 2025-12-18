@@ -10,39 +10,60 @@ class GlobalBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class User(GlobalBase):
+class ReturnMessage(GlobalBase):
+    msg: str
+
+
+class UserBase(GlobalBase):
     username: str
 
 
-class UserCreate(User):
+class UserCreate(UserBase):
     id: UUID | None = None
     password: str
 
 
-class UserPrivate(User):
+class UserPrivate(UserBase):
     id: UUID
     password: str
 
 
-class UserPublic(User):
-    rooms: List[Room] | None = None
+class UserPublic(UserBase):
+    rooms: List[RoomPublic] = []
 
 
-class Room(GlobalBase):
+class RoomBase(GlobalBase):
     id: str
 
 
-class RoomPrivate(Room):
+class RoomPrivate(RoomBase):
     password: str
 
 
-class RoomPublic(Room):
-    items: List[Item] = []
+class RoomPublic(RoomBase):
+    items: List[ItemPublic] = []
 
 
 class RoomsList(GlobalBase):
-    rooms: List[Room]
+    rooms: List[RoomBase]
 
 
-class Item(GlobalBase):
+class ItemBase(GlobalBase):
+    pass
+
+
+class ItemCreate(ItemBase):
+    id: int | None = None
     title: str
+    content: str = ""
+    room_id: str
+
+
+class ItemPrivate(ItemBase):
+    id: int
+    room_id: str
+
+
+class ItemPublic(ItemBase):
+    title: str
+    content: str = ""

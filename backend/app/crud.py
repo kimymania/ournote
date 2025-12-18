@@ -5,10 +5,20 @@ from fastapi import HTTPException, status
 from sqlalchemy import delete, insert, select, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import update
 
 from app.core.security import verify_password
 from app.dbmodels import Items, Rooms, Users, room_membership
-from app.schemas import Item, Room, RoomPrivate, RoomPublic, RoomsList, User, UserPrivate
+from app.schemas import (
+    ItemPublic,
+    ReturnMessage,
+    RoomBase,
+    RoomPrivate,
+    RoomPublic,
+    RoomsList,
+    UserPrivate,
+    UserPublic,
+)
 
 
 def get_username_match(db: Session, username: str) -> bool:
@@ -22,14 +32,14 @@ def get_username_match(db: Session, username: str) -> bool:
 T = TypeVar("T")
 
 
-def create_db(db: Session, data: object) -> User | Room | Item:
+def create_db(db: Session, data: object) -> UserPublic | RoomPublic | ItemPublic:
     """:params data: any of Users, Rooms or Items"""
     if isinstance(data, Users):
-        r = User(username=data.username)
+        r = UserPublic(username=data.username)
     elif isinstance(data, Rooms):
-        r = Room(id=data.id)
-    elif isinstance(data, Item):
-        r = Item(title=data.title)
+        r = RoomPublic(id=data.id)
+    elif isinstance(data, Items):
+        r = ItemPublic(title=data.title, content=data.content)
     else:
         raise
 
@@ -43,22 +53,23 @@ def create_db(db: Session, data: object) -> User | Room | Item:
     return r
 
 
-def delete_db(db: Session, data: object) -> User | Room | Item:
+def delete_db(db: Session, data: object) -> ReturnMessage:
     """:params data: any of Users, Rooms or Items
 
     Associated data should be removed automatically - NEEDS FIXING"""
     if isinstance(data, Users):
         table = Users
-        r = User(username=data.username)
+        r = data.username
     elif isinstance(data, Rooms):
         table = Rooms
-        r = Room(id=data.id)
+        r = data.id
     elif isinstance(data, Items):
         table = Items
-        r = Item(title=data.title)
-
+        r = data.title
     else:
         raise
+    msg = ReturnMessage(msg=f"{r} deleted")
+
     try:
         stmt = delete(table).where(table.id == data.id)
         db.execute(stmt)
@@ -66,7 +77,7 @@ def delete_db(db: Session, data: object) -> User | Room | Item:
     except SQLAlchemyError as e:
         db.rollback()
         raise e
-    return r
+    return msg
 
 
 def add_user_to_room(db: Session, user_id: UUID, room_id: str) -> dict[str, str]:
@@ -104,7 +115,7 @@ def get_user_rooms(db: Session, user_id: UUID) -> RoomsList:
     if result is None:
         rooms_list = RoomsList(rooms=[])
     else:
-        rooms_list = RoomsList(rooms=[Room(id=r.room_id) for r in result])
+        rooms_list = RoomsList(rooms=[RoomBase(id=r.room_id) for r in result])
     return rooms_list
 
 
@@ -132,6 +143,30 @@ def get_room(db: Session, room_id: str) -> RoomPublic:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="room doesn't exist")
 
     id = result[0].id
-    items = [Item(title=item.title) for _, item in result if item is not None]
+    items = [ItemPublic(title=item.title) for _, item in result if item is not None]
     room = RoomPublic(id=id, items=items)
     return room
+
+
+def get_item_data(db: Session, data: Items) -> ItemPublic:
+    stmt = select(Items).where(Items.room_id == data.room_id).where(Items.id == data.id)
+    result = db.execute(stmt).scalar_one()
+    item = ItemPublic(title=result.title, content=result.content)
+    return item
+
+
+def update_item(db: Session, data: Items) -> ItemPublic:
+    stmt = (
+        update(Items)
+        .where(Items.room_id == data.room_id)
+        .where(Items.id == data.id)
+        .values(title=data.title, content=data.content)
+    )
+    item = ItemPublic(title=data.title, content=data.content)
+    try:
+        db.execute(stmt)
+        db.commit()
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise e
+    return item

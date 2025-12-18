@@ -8,7 +8,7 @@ from app.cache import generate_room_id, get_id_by_username
 from app.core.security import hash_password
 from app.crud import add_user_to_room, authenticate_room, create_db, delete_db, get_room
 from app.dbmodels import Rooms
-from app.schemas import Room, RoomPrivate, RoomPublic
+from app.schemas import ReturnMessage, RoomPrivate, RoomPublic
 
 router = APIRouter(tags=["room"])
 
@@ -16,7 +16,7 @@ router = APIRouter(tags=["room"])
 @router.post(
     "/room",
     # dependencies=[Depends(get_auth_user)],
-    response_model=Room,
+    response_model=RoomPublic,
     response_description="ID of new room",
 )
 async def create_room(
@@ -25,8 +25,8 @@ async def create_room(
     username: Annotated[str, Body(...)],
     db: SessionDep,
 ):
-    room = RoomPrivate(id=room_id, password=hash_password(password))
-    data = Rooms(id=room.id, password=room.password)
+    room_priv = RoomPrivate(id=room_id, password=hash_password(password))
+    data = Rooms(id=room_priv.id, password=room_priv.password)
     room = create_db(db, data)
 
     user_id = get_id_by_username(username)
@@ -44,7 +44,7 @@ async def enter_room(
     room_id: str,
     db: SessionDep,
 ):
-    room = Room(id=room_id)
+    room = RoomPublic(id=room_id)
     room = get_room(db, room.id)
     return room
 
@@ -71,7 +71,7 @@ async def join_room(
 @router.delete(
     "/room/{room_id}",
     # dependencies=[Depends(get_auth_user)],
-    response_model=Room,
+    response_model=ReturnMessage,
     response_description="Removed room",
 )
 async def delete_room(

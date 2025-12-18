@@ -10,12 +10,12 @@ from app.cache import get_id_by_username, remove_session, store_session
 from app.core.security import generate_session_id, hash_password
 from app.crud import authenticate_user, create_db, get_username_match
 from app.dbmodels import Users as UserDB
-from app.schemas import User, UserCreate, UserPrivate
+from app.schemas import UserCreate, UserPrivate, UserPublic
 
 router = APIRouter(tags=["login"])
 
 
-@router.post("/signup", response_model=User, response_description="user added successfully")
+@router.post("/signup", response_model=UserPublic, response_description="user added successfully")
 async def signup(
     username: Annotated[str, Form(...)],
     password: Annotated[str, Form(...), Field(min_length=8, max_length=16)],
@@ -30,7 +30,7 @@ async def signup(
     return user
 
 
-@router.post("/login", response_model=User, response_description="login successful")
+@router.post("/login", response_model=UserPublic, response_description="login successful")
 async def login(
     username: Annotated[str, Form(...)],
     password: Annotated[str, Form(...)],
@@ -50,7 +50,7 @@ async def login(
     )
 
     await store_session(session_id, result.id)
-    user = User(username=username)
+    user = UserPublic(username=username)
 
     return user
 
