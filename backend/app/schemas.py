@@ -15,6 +15,7 @@ class ReturnMessage(GlobalBase):
 
 
 class UserBase(GlobalBase):
+    model_config = ConfigDict(str_strip_whitespace=True)
     username: str
 
 
@@ -33,6 +34,7 @@ class UserPublic(UserBase):
 
 
 class RoomBase(GlobalBase):
+    model_config = ConfigDict(str_strip_whitespace=True)
     id: str
 
 
