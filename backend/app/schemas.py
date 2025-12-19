@@ -1,9 +1,21 @@
 """Pydantic schemas"""
 
-from typing import List
+from typing import Annotated, List
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, StringConstraints
+
+USERNAME_PATTERN = r"^[a-zA-Z0-9-_\.]+$"
+
+UsernameRule = Annotated[
+    str,
+    StringConstraints(
+        min_length=2,
+        max_length=16,
+        pattern=USERNAME_PATTERN,
+        strict=True,
+    ),
+]
 
 
 class GlobalBase(BaseModel):
@@ -16,7 +28,7 @@ class ReturnMessage(GlobalBase):
 
 class UserBase(GlobalBase):
     model_config = ConfigDict(str_strip_whitespace=True)
-    username: str
+    username: UsernameRule
 
 
 class UserCreate(UserBase):

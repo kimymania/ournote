@@ -40,6 +40,10 @@ class Items(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(32))
     content: Mapped[str] = mapped_column(String())
-    room_id: Mapped[str] = mapped_column(String(8), ForeignKey("rooms.id", ondelete="CASCADE"))
+    room_id: Mapped[str] = mapped_column(
+        String(8),
+        ForeignKey("rooms.id", ondelete="CASCADE"),
+        primary_key=False,
+    )
 
     room: Mapped[Rooms] = relationship(back_populates="items")

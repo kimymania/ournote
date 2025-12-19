@@ -25,11 +25,11 @@ async def create_room(
     username: Annotated[str, Body(...)],
     db: SessionDep,
 ):
+    user_id = get_id_by_username(username)
     room_priv = RoomPrivate(id=room_id, password=hash_password(password))
     data = Rooms(id=room_priv.id, password=room_priv.password)
     room = create_db(db, data)
 
-    user_id = get_id_by_username(username)
     add_user_to_room(db, user_id, room_id)
     return room
 

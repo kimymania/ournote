@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import delete, insert, select, text
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, NoResultFound, SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import update
 
@@ -133,7 +133,7 @@ def get_room(db: Session, room_id: str) -> RoomPublic:
     """:returns: Room ID & List of items in room"""
     result = db.execute(
         text("""
-            SELECT rooms.id AS id, items.title AS item FROM rooms
+            SELECT rooms.id, items.title FROM rooms
             LEFT JOIN items ON items.room_id = rooms.id
             WHERE rooms.id = :room_id_var
             """),
@@ -143,14 +143,17 @@ def get_room(db: Session, room_id: str) -> RoomPublic:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="room doesn't exist")
 
     id = result[0].id
-    items = [ItemPublic(title=item.title) for _, item in result if item is not None]
+    items = [ItemPublic(title=item_title) for _, item_title in result if item_title]
     room = RoomPublic(id=id, items=items)
     return room
 
 
 def get_item_data(db: Session, data: Items) -> ItemPublic:
     stmt = select(Items).where(Items.room_id == data.room_id).where(Items.id == data.id)
-    result = db.execute(stmt).scalar_one()
+    try:
+        result = db.execute(stmt).scalar_one()
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="item doesn't exist")
     item = ItemPublic(title=result.title, content=result.content)
     return item
 

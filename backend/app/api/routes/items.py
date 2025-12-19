@@ -22,8 +22,8 @@ async def create_item(
     title: Annotated[str, Body(...)],
     content: Annotated[str, Body()] = "",
 ):
-    item_priv = ItemCreate(title=title, content=content, room_id=room_id)
-    data = Items(title=item_priv.title, content=item_priv.content, room_id=item_priv.room_id)
+    priv = ItemCreate(title=title, content=content, room_id=room_id)
+    data = Items(title=priv.title, content=priv.content, room_id=priv.room_id)
     item = create_db(db, data)
     return item
 
@@ -39,8 +39,8 @@ async def view_item(
     item_id: int,
     db: SessionDep,
 ):
-    item_priv = ItemPrivate(id=item_id, room_id=room_id)
-    data = Items(id=item_priv.id, room_id=item_priv.room_id)
+    priv = ItemPrivate(id=item_id, room_id=room_id)
+    data = Items(id=priv.id, room_id=priv.room_id)
     item = get_item_data(db, data)
     return item
 
@@ -71,7 +71,11 @@ async def edit_item(
     response_model=ReturnMessage,
     response_description="Item deleted",
 )
-async def delete_item(room_id: str, item_id: int, db: SessionDep):
+async def delete_item(
+    room_id: str,
+    item_id: int,
+    db: SessionDep,
+):
     priv = ItemPrivate(id=item_id, room_id=room_id)
     data = Items(id=priv.id, room_id=priv.room_id)
     result = delete_db(db, data)

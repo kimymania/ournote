@@ -10,21 +10,27 @@ from app.cache import get_id_by_username, remove_session, store_session
 from app.core.security import generate_session_id, hash_password
 from app.crud import authenticate_user, create_db, get_username_match
 from app.dbmodels import Users as UserDB
-from app.schemas import UserCreate, UserPrivate, UserPublic
+from app.schemas import ReturnMessage, UserCreate, UsernameRule, UserPrivate, UserPublic
 
 router = APIRouter(tags=["login"])
 
 
 @router.post("/signup", response_model=UserPublic, response_description="user added successfully")
 async def signup(
-    username: Annotated[str, Form(...)],
+    username: Annotated[str, Form(...), UsernameRule],
     password: Annotated[str, Form(...), Field(min_length=8, max_length=16)],
     db: SessionDep,
 ):
-    if get_username_match(db, username):
+    # try:
+    user = UserCreate(username=username, password=hash_password(password))
+    # except ValidationError:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+    #         detail="username doesn't match conventions",
+    #     )
+    if get_username_match(db, user.username):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT)
 
-    user = UserCreate(username=username, password=hash_password(password))
     data = UserDB(username=user.username, password=user.password)
     user = create_db(db, data)
     return user
@@ -55,11 +61,15 @@ async def login(
     return user
 
 
-@router.post("/logout")
+@router.post(
+    "/logout",
+    response_model=ReturnMessage,
+    response_description="log out result",
+)
 async def logout(
     session_id: Annotated[str, Depends(get_auth_user)],
     response: Response,
 ):
     await remove_session(session_id)
     response.delete_cookie(key="Authorization")
-    return {"status": "logged out"}
+    return ReturnMessage(msg="logged out")

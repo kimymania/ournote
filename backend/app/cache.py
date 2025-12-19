@@ -34,13 +34,15 @@ def get_id_by_username(username: str) -> UUID:
     """Get user ID for internal use
 
     Raises a 500 error if User ID isn't found, but this shouldn't actually happen"""
+    username = username.strip()
     with Session(engine) as session:
         stmt = select(Users.id).where(Users.username == username)
         try:
             user_id = session.execute(stmt).scalar_one()
-        except NoResultFound as e:
+        except NoResultFound:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"can't find id of {username}: {e}"
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"can't find id of {username}",
             )
         return user_id
 
