@@ -1,8 +1,8 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Depends
 
-from app.api.dependencies import SessionDep
+from app.api.dependencies import SessionDep, get_auth_user
 from app.crud import create_db, delete_db, get_item_data, update_item
 from app.dbmodels import Items
 from app.schemas import ItemCreate, ItemPrivate, ItemPublic, ReturnMessage
@@ -11,8 +11,8 @@ router = APIRouter(prefix="/room", tags=["items"])
 
 
 @router.post(
-    "/{room_id}/item_create",
-    # dependencies=[Depends(get_auth_user)],
+    "/{room_id}/create",
+    dependencies=[Depends(get_auth_user)],
     response_model=ItemPublic,
     response_description="Title and content of new item",
 )
@@ -30,7 +30,7 @@ async def create_item(
 
 @router.get(
     "/{room_id}/{item_id}",
-    # dependencies=[Depends(get_auth_user)],
+    dependencies=[Depends(get_auth_user)],
     response_model=ItemPublic,
     response_description="Title and content of item",
 )
@@ -47,7 +47,7 @@ async def view_item(
 
 @router.put(
     "/{room_id}/{item_id}",
-    # dependencies=[Depends(get_auth_user)],
+    dependencies=[Depends(get_auth_user)],
     response_model=ItemPublic,
     response_description="Title and content of edited item",
 )
@@ -67,7 +67,7 @@ async def edit_item(
 
 @router.delete(
     "/{room_id}/{item_id}",
-    # dependencies=[Depends(get_auth_user)],
+    dependencies=[Depends(get_auth_user)],
     response_model=ReturnMessage,
     response_description="Item deleted",
 )

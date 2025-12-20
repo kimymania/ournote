@@ -41,8 +41,8 @@ def get_id_by_username(username: str) -> UUID:
             user_id = session.execute(stmt).scalar_one()
         except NoResultFound:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"can't find id of {username}",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"can't find user ID of {username}",
             )
         return user_id
 

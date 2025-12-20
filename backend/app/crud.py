@@ -65,19 +65,20 @@ def delete_db(db: Session, data: object) -> ReturnMessage:
         r = data.id
     elif isinstance(data, Items):
         table = Items
-        r = data.title
+        r = data.id
     else:
         raise
-    msg = ReturnMessage(msg=f"{r} deleted")
 
     try:
         stmt = delete(table).where(table.id == data.id)
         db.execute(stmt)
         db.commit()
+
+        msg = ReturnMessage(msg=f"{r} deleted")
+        return msg
     except SQLAlchemyError as e:
         db.rollback()
         raise e
-    return msg
 
 
 def add_user_to_room(db: Session, user_id: UUID, room_id: str) -> dict[str, str]:
@@ -86,8 +87,22 @@ def add_user_to_room(db: Session, user_id: UUID, room_id: str) -> dict[str, str]
         db.execute(insert(room_membership).values(user_id=user_id, room_id=room_id))
         db.commit()
     except IntegrityError:
-        return {"status": "user is already in room"}
+        return {"status": "error: already_in_room"}
     return {"status": "successfully joined room"}
+
+
+def user_leave_room(db: Session, user_id: UUID, room_id: str) -> dict[str, str]:
+    try:
+        db.execute(
+            delete(room_membership)
+            .where(room_membership.c.user_id == user_id)
+            .where(room_membership.c.room_id == room_id)
+        )
+        db.commit()
+        return {"status": "success"}
+    except SQLAlchemyError as e:
+        db.rollback()
+        return {"status": f"error: {e}"}
 
 
 def authenticate_user(db: Session, data: UserPrivate) -> UserPrivate:
@@ -104,7 +119,7 @@ def authenticate_room(db: Session, data: RoomPrivate) -> None:
     result = db.execute(stmt).scalar_one_or_none()
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="room doesn't exist")
-    if not verify_password(data.password, result.password):
+    if verify_password(data.password, result.password) is False:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="wrong passcode")
     return
 
