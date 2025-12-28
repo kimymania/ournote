@@ -10,26 +10,37 @@ class GlobalBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class ReturnMessage(GlobalBase):
-    msg: str
+class Token(GlobalBase):
+    access_token: str
+    token_type: str = "bearer"
 
 
-class UserBase(GlobalBase):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class BaseMessage(GlobalBase):
+    success: bool = True
+    message: str
+
+
+class Generator(GlobalBase):
+    generated_id: str
+
+
+class User(GlobalBase):
     username: str
+    password: str
+
+    model_config = ConfigDict(str_strip_whitespace=True)
 
 
-class UserCreate(UserBase):
+class UserCreate(User):
     id: UUID | None = None
-    password: str
 
 
-class UserPrivate(UserBase):
+class UserPrivate(User):
     id: UUID
-    password: str
 
 
-class UserPublic(UserBase):
+class UserPublic(GlobalBase):
+    username: str
     rooms: List[RoomPublic] = []
 
 

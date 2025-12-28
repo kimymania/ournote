@@ -5,7 +5,7 @@ from fastapi import APIRouter, Body, Depends
 from app.api.dependencies import SessionDep, get_auth_user
 from app.crud import create_db, delete_db, get_item_data, update_item
 from app.dbmodels import Items
-from app.schemas import ItemCreate, ItemPrivate, ItemPublic, ReturnMessage
+from app.schemas import BaseMessage, ItemCreate, ItemPrivate, ItemPublic
 
 router = APIRouter(prefix="/room", tags=["items"])
 
@@ -68,7 +68,7 @@ async def edit_item(
 @router.delete(
     "/{room_id}/{item_id}",
     dependencies=[Depends(get_auth_user)],
-    response_model=ReturnMessage,
+    response_model=BaseMessage,
     response_description="Item deleted",
 )
 async def delete_item(
