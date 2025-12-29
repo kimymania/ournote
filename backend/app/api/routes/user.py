@@ -6,8 +6,6 @@ from fastapi import APIRouter, Depends, Form
 from app.api.dependencies import AuthDep, SessionDep
 from app.constants import PWStringMetadata, UsernameStringMetadata
 from app.core.security import get_current_user
-from app.crud import get_user_by_id
-from app.exceptions import AuthenticationError
 from app.schemas import BaseMessage, RoomsList
 from app.services import user as service
 
@@ -21,7 +19,13 @@ async def create_user(
     auth: AuthDep,
     db: SessionDep,
 ):
-    return await service.create_user(username=username, password=password, db=db, auth=auth)
+    result = await service.create_user(
+        username=username,
+        password=password,
+        db=db,
+        auth=auth,
+    )
+    return result
 
 
 @router.get("/{username}", response_model=RoomsList, response_description="list of user's rooms")
@@ -30,10 +34,11 @@ async def user_home(
     user_id: Annotated[UUID, Depends(get_current_user)],
     db: SessionDep,
 ):
-    user = get_user_by_id(db, user_id)
-    if username != user.username:  # in case token doesn't match username url
-        raise AuthenticationError
-    rooms = await service.get_user_home(db, user.id)
+    rooms = await service.get_user_home(
+        user_id=user_id,
+        username=username,
+        db=db,
+    )
     return rooms
 
 
@@ -44,9 +49,10 @@ async def delete_user(
     auth: AuthDep,
     db: SessionDep,
 ):
-    user = get_user_by_id(db, user_id)
-    try:
-        result = await service.delete_user(user=user, auth=auth, password=password, db=db)
-    except AuthenticationError as e:
-        raise e
+    result = await service.delete_user(
+        user_id=user_id,
+        auth=auth,
+        password=password,
+        db=db,
+    )
     return result

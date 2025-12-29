@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import Annotated, Any
+from typing import Annotated
 from uuid import UUID
 
 from app import crud
@@ -53,16 +53,16 @@ class Authenticator:
         try:
             user = crud.get_user_by_username(db, input.username)
             self.verify_password(input.password, user.password)
-        except NotFoundError, AuthenticationError:
-            raise AuthenticationError
+        except (NotFoundError, AuthenticationError) as e:
+            raise AuthenticationError from e
         return user
 
-    def authenticate_room(self, db: Session, room_id: str, password: str) -> RoomPrivate:
+    def authenticate_room(self, db: Session, room_id: str, room_pw: str) -> RoomPrivate:
         try:
             room = crud.get_room(db, room_id)
-            self.verify_password(password, room.password)
-        except NotFoundError, AuthenticationError:
-            raise AuthenticationError
+            self.verify_password(room_pw, room.password)
+        except (NotFoundError, AuthenticationError) as e:
+            raise AuthenticationError from e
         return room
 
 
@@ -70,31 +70,21 @@ class Authenticator:
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-def validate_token(payload: dict[str, Any]) -> UUID:
-    try:
-        user_id_str: str = payload["sub"]
-        user_id = UUID(user_id_str)
-    except KeyError:
-        raise AuthenticationError(detail="Invalid token")
-    except (ValueError, AttributeError):
-        raise AuthenticationError(detail="Invalid token")
-
-    try:
-        exp = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
-    except KeyError:
-        raise AuthenticationError(detail="Invalid token")
-    if exp < datetime.now(timezone.utc):
-        raise AuthenticationError(detail="Token expired")
-
-    return user_id
-
-
 def decode_token(token: str) -> UUID:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=ALGORITHM)
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=ALGORITHM,
+            options={
+                "require_sub": True,
+                "require_exp": True,
+            },
+        )
     except JWTError as e:
-        raise e
-    return validate_token(payload)
+        raise AuthenticationError from e
+    user_id = UUID(payload["sub"])
+    return user_id
 
 
 def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UUID:

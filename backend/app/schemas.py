@@ -39,44 +39,30 @@ class UserPrivate(User):
     id: UUID
 
 
-class UserPublic(GlobalBase):
-    username: str
-    rooms: List[RoomPublic] = []
+class RoomsList(GlobalBase):
+    rooms: List[Room] | None = None
 
 
-class RoomBase(GlobalBase):
+class Room(GlobalBase):
     model_config = ConfigDict(str_strip_whitespace=True)
     id: str
 
 
-class RoomPrivate(RoomBase):
+class RoomPrivate(Room):
     password: str
 
 
-class RoomPublic(RoomBase):
-    items: List[ItemPublic] = []
+class ItemsList(GlobalBase):
+    items: List[Item] | None = None
 
 
-class RoomsList(GlobalBase):
-    rooms: List[RoomBase]
+class Item(GlobalBase):
+    title: str
+    content: str | None = None
 
 
-class ItemBase(GlobalBase):
-    pass
-
-
-class ItemCreate(ItemBase):
+class ItemCreate(Item):
     id: int | None = None
     title: str
-    content: str = ""
+    content: str | None = None
     room_id: str
-
-
-class ItemPrivate(ItemBase):
-    id: int
-    room_id: str
-
-
-class ItemPublic(ItemBase):
-    title: str
-    content: str = ""

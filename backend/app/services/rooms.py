@@ -1,14 +1,10 @@
 import random
 import string
-from typing import Annotated
 from uuid import UUID
 
-from fastapi import Form
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import SessionDep
-from app.constants import RoomPINMetadata
 from app.core.db import engine
 from app.core.security import Authenticator
 from app.crud import (
@@ -17,12 +13,12 @@ from app.crud import (
     delete_db,
     get_room_items,
     get_user_by_username,
-    get_user_rooms,
+    upsert_room_membership,
     user_leave_room,
 )
 from app.dbmodels import Rooms
-from app.exceptions import AuthenticationError, DBError
-from app.schemas import BaseMessage, RoomPrivate, RoomPublic, RoomsList
+from app.exceptions import AuthenticationError
+from app.schemas import ItemsList, RoomPrivate, RoomsList
 
 
 def generate_room_id() -> str:
@@ -41,55 +37,44 @@ async def create_room(
     room_pw: str,
     db: Session,
     auth: Authenticator,
-) -> RoomPublic:
+) -> str:
     """Create db entry -> add user to room"""
     room = RoomPrivate(id=room_id, password=auth.hash_password(room_pw))
     data = Rooms(**room.model_dump())
-    try:
-        create_db(db, data)
-        add_user_to_room(db, user_id, room.id)
-    except Exception as e:
-        raise DBError(detail=f"{e}")
-
-    room_pub = RoomPublic(id=room.id)
-    return room_pub
+    create_db(db, data)
+    add_user_to_room(db, user_id, room.id)
+    return "room created"
 
 
 async def enter_room(
-    room_id: str,
-    room_pw: str,
-    db: SessionDep,
-    auth: Authenticator,
-) -> RoomPublic:
-    room = auth.authenticate_room(db, room_id, room_pw)
-    result = get_room_items(db, room.id)
-    return result
-
-
-async def join_room(
     user_id: UUID,
     room_id: str,
-    room_pw: Annotated[str, Form(...), RoomPINMetadata],
-    db: SessionDep,
+    room_pw: str,
+    db: Session,
     auth: Authenticator,
-) -> BaseMessage:
+) -> str:
     room = auth.authenticate_room(db, room_id, room_pw)
-    try:
-        result = add_user_to_room(db, user_id, room.id)
-    except Exception as e:
-        raise DBError(detail=f"{e}")
-    return BaseMessage(message=result["message"])
+    upsert_room_membership(db, user_id, room.id)
+    return "room entered"
+
+
+async def get_room_contents(
+    room_id: str,
+    db: Session,
+) -> ItemsList:
+    result = get_room_items(db, room_id)
+    return result
 
 
 async def delete_room(
     room_id: str,
     room_pw: str,
-    db: SessionDep,
+    db: Session,
     auth: Authenticator,
-) -> dict[str, str]:
+) -> str:
     room = auth.authenticate_room(db, room_id, room_pw)
-    result = delete_db(db, room.id)
-    return result
+    delete_db(db, room.id)
+    return "delete successful"
 
 
 async def leave_room(
@@ -97,13 +82,11 @@ async def leave_room(
     username: str,
     password: str,
     room_id: str,
-    db: SessionDep,
+    db: Session,
     auth: Authenticator,
 ) -> RoomsList:
     user = get_user_by_username(db, username)
-    if not auth.verify_password(password, user.password):
-        raise AuthenticationError("Wrong password")
-
-    user_leave_room(db, user_id, room_id)
-    rooms_list = get_user_rooms(db, user_id)
-    return rooms_list
+    if user.id != user_id or not auth.verify_password(password, user.password):
+        raise AuthenticationError()
+    rooms = user_leave_room(db, user_id, room_id)
+    return rooms

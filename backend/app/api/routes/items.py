@@ -2,10 +2,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends
 
-from app.api.dependencies import SessionDep, get_auth_user
+from app.api.dependencies import SessionDep
 from app.crud import create_db, delete_db, get_item_data, update_item
 from app.dbmodels import Items
-from app.schemas import BaseMessage, ItemCreate, ItemPrivate, ItemPublic
+from app.schemas import BaseMessage, ItemCreate
 
 router = APIRouter(prefix="/room", tags=["items"])
 
