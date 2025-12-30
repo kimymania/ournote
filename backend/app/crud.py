@@ -1,8 +1,10 @@
 from typing import Any, Type
 from uuid import UUID
 
-from sqlalchemy import delete, select, text
-from sqlalchemy.exc import IntegrityError, NoResultFound, SQLAlchemyError
+from sqlalchemy import delete, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import update
 
@@ -21,13 +23,13 @@ from app.schemas import (
 
 
 def create_db(db: Session, data: object) -> Result:
+    record = data.__repr__()  # so i don't have to add a refresh() after commit()
     try:
         db.add(data)
         db.commit()
-        db.refresh(data)
     except IntegrityError:
         db.rollback()
-        return Result(success=False, detail=f"{data.__repr__()} already exists in DB")
+        return Result(success=False, detail=f"{record} already exists in DB")
     except SQLAlchemyError as e:
         db.rollback()
         raise DBError from e
@@ -41,13 +43,17 @@ TABLE_ID_REGISTRY: dict[Any, Type] = {
 }
 
 
-def delete_db(db: Session, id: Any) -> Result:
+def delete_db(db: Session, id: Any, **kwargs) -> Result:
     """:params data: any of User ID, Room ID or Item ID"""
     table = TABLE_ID_REGISTRY.get(type(id))
     if table is None:
         raise DBError("Unknown type")
 
     stmt = delete(table).where(table.id == id)
+    if isinstance(table, Items):
+        room_id = kwargs["room_id"]
+        stmt = stmt.where(table.room_id == room_id)
+
     try:
         db.execute(stmt)
         db.commit()
@@ -101,17 +107,18 @@ def user_leave_room(db: Session, user_id: UUID, room_id: str) -> RoomsList:
     return rooms_list
 
 
-def upsert_room_membership(db: Session, user_id: UUID, room_id: str) -> Result:
-    """Check if user is a member of room -> If not, create record"""
+def insert_if_not_exists(db: Session, data: dict[str, Any]) -> Result:
+    if not db.bind:  # Suppress db.bind.dialect linter error - should not happen
+        raise DBError("Session is corrupt")
+
+    if db.bind.dialect.name == "postgresql":
+        insert = pg_insert
+    else:
+        insert = sqlite_insert
+    stmt = insert(RoomMem).values(**data)
+    pkeys = [c.name for c in RoomMem.primary_key]
     try:
-        db.execute(
-            text("""
-                INSERT INTO room_membership (user_id, room_id)
-                VALUES (:user_id, :room_id)
-                ON CONFLICT (user_id, room_id) DO NOTHING
-                """),
-            {"user_id": user_id, "room_id": room_id},
-        )
+        db.execute(stmt.on_conflict_do_nothing(index_elements=pkeys))
         db.commit()
     except SQLAlchemyError:
         db.rollback()
@@ -137,46 +144,38 @@ def get_room(db: Session, room_id: str) -> RoomPrivate:
 
 
 def get_all_room_items(db: Session, room_id: str) -> ItemsList:
-    # WIP - change query so it only looks up items list - room_id is not needed
-    """:returns: Room ID & List of items in room"""
-    result = db.execute(
-        text("""
-            SELECT rooms.id, items.title FROM rooms
-            LEFT JOIN items ON items.room_id = rooms.id
-            WHERE rooms.id = :room_id_var
-            """),
-        {"room_id_var": room_id},
-    ).all()
+    """:returns: list of all items in room"""
+    stmt = select(Items.title).where(Items.room_id == room_id)
+    result = db.execute(stmt).scalars().all()
     if len(result) == 0:
-        raise NotFoundError(detail="room doesn't exist")
-
-    items = [Item(title=item_title) for _, item_title in result if item_title]
+        return ItemsList()
+    items = [Item(title=item_title) for item_title in result]
     items_list = ItemsList(items=items)
     return items_list
 
 
-def get_item_data(db: Session, data: Items) -> Item:
+def get_item(db: Session, data: Items) -> Result:
     stmt = select(Items).where(Items.room_id == data.room_id).where(Items.id == data.id)
-    try:
-        result = db.execute(stmt).scalar_one()
-    except NoResultFound:
-        raise NotFoundError(detail="item doesn't exist")
+    result = db.execute(stmt).scalar_one_or_none()
+    if result is None:
+        return Result(success=False, detail="Item doesn't exist")
     item = Item(title=result.title, content=result.content)
-    return item
+    return Result(detail="item found", data=item)
 
 
-def update_item(db: Session, data: Items) -> Item:
+def update_item(db: Session, data: Items) -> Result:
+    item = Item(title=data.title, content=data.content)
     stmt = (
         update(Items)
         .where(Items.room_id == data.room_id)
         .where(Items.id == data.id)
         .values(title=data.title, content=data.content)
     )
-    item = Item(title=data.title, content=data.content)
     try:
         db.execute(stmt)
         db.commit()
     except SQLAlchemyError:
         db.rollback()
         raise
-    return item
+    result = Result(detail="successfully updated item", data=item)
+    return result

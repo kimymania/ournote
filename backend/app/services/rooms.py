@@ -12,7 +12,7 @@ from app.crud import (
     delete_db,
     get_all_room_items,
     get_user_by_username,
-    upsert_room_membership,
+    insert_if_not_exists,
     user_leave_room,
 )
 from app.dbmodels import Rooms
@@ -45,7 +45,7 @@ async def create_room(
     return result
 
 
-async def enter_room(
+async def join_room(
     user_id: UUID,
     room_id: str,
     room_pw: str,
@@ -54,7 +54,11 @@ async def enter_room(
 ) -> Result:
     """Once user enters a room, user stays a member unless they 'leave' the room"""
     room = auth.authenticate_room(db, room_id, room_pw)
-    result = upsert_room_membership(db, user_id, room.id)
+    data = {
+        "user_id": user_id,
+        "room_id": room.id,
+    }
+    result = insert_if_not_exists(db, data)
     return result
 
 

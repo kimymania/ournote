@@ -15,11 +15,6 @@ class Token(GlobalBase):
     token_type: str = "bearer"
 
 
-class BaseMessage(GlobalBase):
-    success: bool = True
-    message: str
-
-
 class Result(GlobalBase):
     success: bool = True
     detail: str
@@ -63,8 +58,11 @@ class Item(GlobalBase):
     content: str | None = None
 
 
-class ItemCreate(Item):
+class ItemModifier(Item):
     id: int | None = None
-    title: str
-    content: str | None = None
+    room_id: str
+
+
+class ItemPrivate(GlobalBase):
+    item_id: int
     room_id: str

@@ -21,7 +21,6 @@ async def create_room(
     auth: AuthDep,
 ):
     result = await service.create_room(
-        user_id=user_id,
         room_id=room_id,
         room_pw=room_pw,
         db=db,
@@ -31,14 +30,14 @@ async def create_room(
 
 
 @router.post("/{room_id}", response_model=Result)
-async def enter_room(
+async def join_room(
     user_id: Annotated[UUID, Depends(get_current_user)],
     room_id: str,
     room_pw: Annotated[str, Form(...), RoomPINMetadata],
     db: SessionDep,
     auth: AuthDep,
 ):
-    result = await service.enter_room(
+    result = await service.join_room(
         user_id=user_id,
         room_id=room_id,
         room_pw=room_pw,

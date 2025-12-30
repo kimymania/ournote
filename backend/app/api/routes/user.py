@@ -7,7 +7,7 @@ from app.api.dependencies import AuthDep, SessionDep
 from app.constants import PWStringMetadata, UsernameStringMetadata
 from app.core.security import get_current_user
 from app.exceptions import DuplicateDataError
-from app.schemas import BaseMessage, Result, RoomsList
+from app.schemas import Result, RoomsList
 from app.services import user as service
 
 router = APIRouter(prefix="/user", tags=["user"])
@@ -45,7 +45,7 @@ async def user_home(
     return rooms
 
 
-@router.delete("/{username}", response_model=BaseMessage)
+@router.delete("/{username}", response_model=Result)
 async def delete_user(
     user_id: Annotated[UUID, Depends(get_current_user)],
     password: Annotated[str, Form(...)],

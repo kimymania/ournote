@@ -1,56 +1,45 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Body
 
 from app.api.dependencies import SessionDep
-from app.crud import create_db, delete_db, get_item_data, update_item
-from app.dbmodels import Items
-from app.schemas import BaseMessage, ItemCreate
+from app.schemas import Result
+from app.services import items as service
 
 router = APIRouter(prefix="/room", tags=["items"])
 
 
-@router.post(
-    "/{room_id}/create",
-    dependencies=[Depends(get_auth_user)],
-    response_model=ItemPublic,
-    response_description="Title and content of new item",
-)
+@router.post("/{room_id}/item/create", response_model=Result)
 async def create_item(
     room_id: str,
     db: SessionDep,
     title: Annotated[str, Body(...)],
-    content: Annotated[str, Body()] = "",
+    content: Annotated[str | None, Body()] = None,
 ):
-    priv = ItemCreate(title=title, content=content, room_id=room_id)
-    data = Items(title=priv.title, content=priv.content, room_id=priv.room_id)
-    item = create_db(db, data)
-    return item
+    result = await service.create_item(
+        room_id=room_id,
+        title=title,
+        content=content,
+        db=db,
+    )
+    return result
 
 
-@router.get(
-    "/{room_id}/{item_id}",
-    dependencies=[Depends(get_auth_user)],
-    response_model=ItemPublic,
-    response_description="Title and content of item",
-)
-async def view_item(
+@router.get("/{room_id}/item/{item_id}", response_model=Result)
+async def view_existing_item(
     room_id: str,
     item_id: int,
     db: SessionDep,
 ):
-    priv = ItemPrivate(id=item_id, room_id=room_id)
-    data = Items(id=priv.id, room_id=priv.room_id)
-    item = get_item_data(db, data)
-    return item
+    result = await service.view_existing_item(
+        room_id=room_id,
+        item_id=item_id,
+        db=db,
+    )
+    return result
 
 
-@router.put(
-    "/{room_id}/{item_id}",
-    dependencies=[Depends(get_auth_user)],
-    response_model=ItemPublic,
-    response_description="Title and content of edited item",
-)
+@router.put("/{room_id}/item/{item_id}", response_model=Result)
 async def edit_item(
     room_id: str,
     item_id: int,
@@ -58,24 +47,25 @@ async def edit_item(
     title: Annotated[str, Body(...)],
     content: Annotated[str, Body()] = "",
 ):
-    priv = ItemPrivate(id=item_id, room_id=room_id)
-    pub = ItemPublic(title=title, content=content)
-    data = Items(id=priv.id, room_id=priv.room_id, title=pub.title, content=pub.content)
-    item = update_item(db, data)
-    return item
+    result = await service.edit_item(
+        room_id=room_id,
+        item_id=item_id,
+        title=title,
+        content=content,
+        db=db,
+    )
+    return result
 
 
-@router.delete(
-    "/{room_id}/{item_id}",
-    response_model=BaseMessage,
-    response_description="Item deleted",
-)
+@router.delete("/{room_id}/item/{item_id}", response_model=Result)
 async def delete_item(
     room_id: str,
     item_id: int,
     db: SessionDep,
 ):
-    priv = ItemPrivate(id=item_id, room_id=room_id)
-    data = Items(id=priv.id, room_id=priv.room_id)
-    result = delete_db(db, data)
+    result = await service.delete_item(
+        room_id=room_id,
+        item_id=item_id,
+        db=db,
+    )
     return result

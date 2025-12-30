@@ -19,7 +19,7 @@ room_membership = Table(
 class Users(Base):
     __tablename__ = "users"
 
-    id: Mapped[uuid.UUID] = mapped_column(Uuid(), primary_key=True, default=lambda: uuid.uuid4())
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=lambda: uuid.uuid4())
     username: Mapped[str] = mapped_column(String(32), unique=True)
     password: Mapped[str] = mapped_column(String(128), nullable=False)
     rooms: Mapped[List[Rooms]] = relationship(secondary=room_membership, back_populates="members")

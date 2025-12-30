@@ -7,7 +7,7 @@ from app.core.security import Authenticator
 from app.crud import create_db, delete_db, get_user_by_id, get_user_by_username, get_user_rooms
 from app.dbmodels import Users as UserDB
 from app.exceptions import AuthenticationError, NotFoundError
-from app.schemas import BaseMessage, Result, RoomsList, User, UserCreate
+from app.schemas import Result, RoomsList, User, UserCreate
 
 
 async def create_user(
@@ -59,9 +59,9 @@ async def delete_user(
     auth: Authenticator,
     password: str,
     db: Session,
-) -> BaseMessage:
+) -> Result:
     user = get_user_by_id(db, user_id)
     if not auth.verify_password(password, user.password):
         raise AuthenticationError(detail="wrong password")
-    delete_db(db, user.id)
-    return BaseMessage(message="delete successful")
+    result = delete_db(db, user.id)
+    return result
