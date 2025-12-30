@@ -6,13 +6,13 @@ from fastapi import APIRouter, Depends, Form
 from app.api.dependencies import AuthDep, SessionDep
 from app.constants import PWStringMetadata, RoomPINMetadata
 from app.core.security import get_current_user
-from app.schemas import BaseMessage, ItemsList, RoomsList
+from app.schemas import ItemsList, Result, RoomsList
 from app.services import rooms as service
 
 router = APIRouter(prefix="/room", tags=["room"])
 
 
-@router.post("/create", response_model=BaseMessage)
+@router.post("/create", response_model=Result)
 async def create_room(
     user_id: Annotated[UUID, Depends(get_current_user)],
     room_id: str,
@@ -27,10 +27,10 @@ async def create_room(
         db=db,
         auth=auth,
     )
-    return BaseMessage(message=result)
+    return result
 
 
-@router.post("/{room_id}", response_model=BaseMessage)
+@router.post("/{room_id}", response_model=Result)
 async def enter_room(
     user_id: Annotated[UUID, Depends(get_current_user)],
     room_id: str,
@@ -45,7 +45,7 @@ async def enter_room(
         db=db,
         auth=auth,
     )
-    return BaseMessage(message=result)
+    return result
 
 
 @router.get("/{room_id}", response_model=ItemsList, response_description="list of items in room")
@@ -58,7 +58,7 @@ async def get_room(
     return result
 
 
-@router.delete("/{room_id}", response_model=BaseMessage)
+@router.delete("/{room_id}", response_model=Result)
 async def delete_room(
     _: Annotated[UUID, Depends(get_current_user)],
     room_id: str,
@@ -72,7 +72,7 @@ async def delete_room(
         db=db,
         auth=auth,
     )
-    return BaseMessage(message=result)
+    return result
 
 
 @router.delete(

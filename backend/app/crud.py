@@ -1,17 +1,18 @@
 from typing import Any, Type
 from uuid import UUID
 
-from sqlalchemy import delete, insert, select, text
+from sqlalchemy import delete, select, text
 from sqlalchemy.exc import IntegrityError, NoResultFound, SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import update
 
 from app.dbmodels import Items, Rooms, Users
 from app.dbmodels import room_membership as RoomMem
-from app.exceptions import DBError, DuplicateDataError, NotFoundError
+from app.exceptions import DBError, NotFoundError
 from app.schemas import (
     Item,
     ItemsList,
+    Result,
     Room,
     RoomPrivate,
     RoomsList,
@@ -19,17 +20,18 @@ from app.schemas import (
 )
 
 
-def create_db(db: Session, data: object) -> None:
+def create_db(db: Session, data: object) -> Result:
     try:
         db.add(data)
         db.commit()
         db.refresh(data)
-    except IntegrityError as e:
+    except IntegrityError:
         db.rollback()
-        raise DuplicateDataError(data.__repr__()) from e
+        return Result(success=False, detail=f"{data.__repr__()} already exists in DB")
     except SQLAlchemyError as e:
         db.rollback()
         raise DBError from e
+    return Result(detail="succesfully created")
 
 
 TABLE_ID_REGISTRY: dict[Any, Type] = {
@@ -39,7 +41,7 @@ TABLE_ID_REGISTRY: dict[Any, Type] = {
 }
 
 
-def delete_db(db: Session, id: Any) -> None:
+def delete_db(db: Session, id: Any) -> Result:
     """:params data: any of User ID, Room ID or Item ID"""
     table = TABLE_ID_REGISTRY.get(type(id))
     if table is None:
@@ -52,6 +54,7 @@ def delete_db(db: Session, id: Any) -> None:
     except SQLAlchemyError as e:
         db.rollback()
         raise DBError from e
+    return Result(detail="successfully deleted")
 
 
 def get_user_by_username(db: Session, username: str) -> UserPrivate:
@@ -72,14 +75,15 @@ def get_user_by_id(db: Session, user_id: UUID) -> UserPrivate:
     return user
 
 
-def add_user_to_room(db: Session, user_id: UUID, room_id: str) -> None:
-    stmt = insert(RoomMem).values(user_id=user_id, room_id=room_id)
-    try:
-        db.execute(stmt)
-        db.commit()
-    except SQLAlchemyError:
-        db.rollback()
-        raise
+# def add_user_to_room(db: Session, user_id: UUID, room_id: str) -> Result:
+#     stmt = insert(RoomMem).values(user_id=user_id, room_id=room_id)
+#     try:
+#         db.execute(stmt)
+#         db.commit()
+#     except SQLAlchemyError:
+#         db.rollback()
+#         raise
+#     return Result(detail="successfully added user to room")
 
 
 def user_leave_room(db: Session, user_id: UUID, room_id: str) -> RoomsList:
@@ -97,7 +101,7 @@ def user_leave_room(db: Session, user_id: UUID, room_id: str) -> RoomsList:
     return rooms_list
 
 
-def upsert_room_membership(db: Session, user_id: UUID, room_id: str) -> None:
+def upsert_room_membership(db: Session, user_id: UUID, room_id: str) -> Result:
     """Check if user is a member of room -> If not, create record"""
     try:
         db.execute(
@@ -112,6 +116,7 @@ def upsert_room_membership(db: Session, user_id: UUID, room_id: str) -> None:
     except SQLAlchemyError:
         db.rollback()
         raise
+    return Result(detail="successfully entered room")
 
 
 def get_user_rooms(db: Session, user_id: UUID) -> RoomsList:
@@ -131,7 +136,8 @@ def get_room(db: Session, room_id: str) -> RoomPrivate:
     return room
 
 
-def get_room_items(db: Session, room_id: str) -> ItemsList:
+def get_all_room_items(db: Session, room_id: str) -> ItemsList:
+    # WIP - change query so it only looks up items list - room_id is not needed
     """:returns: Room ID & List of items in room"""
     result = db.execute(
         text("""

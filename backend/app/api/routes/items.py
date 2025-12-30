@@ -67,7 +67,6 @@ async def edit_item(
 
 @router.delete(
     "/{room_id}/{item_id}",
-    dependencies=[Depends(get_auth_user)],
     response_model=BaseMessage,
     response_description="Item deleted",
 )

@@ -6,36 +6,40 @@ from sqlalchemy.orm import Session
 from app.core.security import Authenticator
 from app.crud import create_db, delete_db, get_user_by_id, get_user_by_username, get_user_rooms
 from app.dbmodels import Users as UserDB
-from app.exceptions import AuthenticationError, DuplicateDataError, NotFoundError
-from app.schemas import BaseMessage, RoomsList, User, UserCreate
+from app.exceptions import AuthenticationError, NotFoundError
+from app.schemas import BaseMessage, Result, RoomsList, User, UserCreate
 
 
 async def create_user(
-    username: str, password: str, db: Session, auth: Authenticator
-) -> BaseMessage:
+    username: str,
+    password: str,
+    db: Session,
+    auth: Authenticator,
+) -> Result:
     """:returns: UserPublic model containing username and empty list of rooms"""
     new_user = UserCreate(username=username, password=auth.hash_password(password))
     try:
         if get_user_by_username(db, new_user.username):
-            raise DuplicateDataError(username)
+            return Result(success=False, detail="username already exists")
     except NotFoundError:
         pass
 
     data = UserDB(**new_user.model_dump(), rooms=[])
-    create_db(db, data)
-    return BaseMessage(message="user created")
+    result = create_db(db, data)
+    return result
 
 
 async def login(
     form_data: OAuth2PasswordRequestForm,
     auth: Authenticator,
     db: Session,
-) -> str:
+) -> Result:
     """:returns: access token string"""
     input = User(username=form_data.username, password=form_data.password)
     user = auth.authenticate_user(db=db, input=input)
     access_token = auth.create_access_token(user.id)
-    return access_token
+    result = Result(detail="successfully created token", data=access_token)
+    return result
 
 
 async def get_user_home(

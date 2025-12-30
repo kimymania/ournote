@@ -1,6 +1,6 @@
 """Pydantic schemas"""
 
-from typing import List
+from typing import Any, List
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -20,8 +20,10 @@ class BaseMessage(GlobalBase):
     message: str
 
 
-class Generator(GlobalBase):
-    generated_id: str
+class Result(GlobalBase):
+    success: bool = True
+    detail: str
+    data: Any | None = None
 
 
 class User(GlobalBase):

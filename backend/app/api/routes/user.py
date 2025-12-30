@@ -6,13 +6,14 @@ from fastapi import APIRouter, Depends, Form
 from app.api.dependencies import AuthDep, SessionDep
 from app.constants import PWStringMetadata, UsernameStringMetadata
 from app.core.security import get_current_user
-from app.schemas import BaseMessage, RoomsList
+from app.exceptions import DuplicateDataError
+from app.schemas import BaseMessage, Result, RoomsList
 from app.services import user as service
 
 router = APIRouter(prefix="/user", tags=["user"])
 
 
-@router.post("/signup", response_model=BaseMessage)
+@router.post("/signup", response_model=Result)
 async def create_user(
     username: Annotated[str, Form(...), UsernameStringMetadata],
     password: Annotated[str, Form(...), PWStringMetadata],
@@ -25,6 +26,8 @@ async def create_user(
         db=db,
         auth=auth,
     )
+    if not result.success:
+        raise DuplicateDataError(result.detail)
     return result
 
 
