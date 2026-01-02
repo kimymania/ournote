@@ -1,2 +1,2 @@
-source .venv/bin/activate
+source backend/.venv/bin/activate
 fastapi dev backend/app/main.py
