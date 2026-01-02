@@ -2,7 +2,7 @@ from pydantic import StringConstraints
 
 USERNAME_PATTERN = r"^[a-zA-z0-9-.]+$"
 PASSWORD_PATTERN = r"^[a-zA-z0-9!@#$%^&*-.]+$"
-PIN_PATTERN = r"\d{4}"
+PIN_PATTERN = r"\d"
 
 UsernameStringMetadata = StringConstraints(
     strip_whitespace=True,
@@ -25,5 +25,7 @@ PWStringMetadata = StringConstraints(
 RoomPINMetadata = StringConstraints(
     strip_whitespace=True,
     strict=True,
+    min_length=4,
+    max_length=4,
     pattern=PIN_PATTERN,
 )

@@ -1,6 +1,6 @@
 """Pydantic schemas"""
 
-from typing import List
+from typing import Any, List
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -10,62 +10,59 @@ class GlobalBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class ReturnMessage(GlobalBase):
-    msg: str
+class Token(GlobalBase):
+    access_token: str
+    token_type: str = "bearer"
 
 
-class UserBase(GlobalBase):
-    model_config = ConfigDict(str_strip_whitespace=True)
+class Result(GlobalBase):
+    success: bool = True
+    detail: str
+    data: Any | None = None
+
+
+class User(GlobalBase):
     username: str
+    password: str
+
+    model_config = ConfigDict(str_strip_whitespace=True)
 
 
-class UserCreate(UserBase):
+class UserCreate(User):
     id: UUID | None = None
-    password: str
 
 
-class UserPrivate(UserBase):
+class UserPrivate(User):
     id: UUID
-    password: str
 
 
-class UserPublic(UserBase):
-    rooms: List[RoomPublic] = []
+class RoomsList(GlobalBase):
+    rooms: List[Room] | None = None
 
 
-class RoomBase(GlobalBase):
+class Room(GlobalBase):
     model_config = ConfigDict(str_strip_whitespace=True)
     id: str
 
 
-class RoomPrivate(RoomBase):
+class RoomPrivate(Room):
     password: str
 
 
-class RoomPublic(RoomBase):
-    items: List[ItemPublic] = []
+class ItemsList(GlobalBase):
+    items: List[Item] | None = None
 
 
-class RoomsList(GlobalBase):
-    rooms: List[RoomBase]
+class Item(GlobalBase):
+    title: str
+    content: str | None = None
 
 
-class ItemBase(GlobalBase):
-    pass
-
-
-class ItemCreate(ItemBase):
+class ItemModifier(Item):
     id: int | None = None
-    title: str
-    content: str = ""
     room_id: str
 
 
-class ItemPrivate(ItemBase):
-    id: int
+class ItemPrivate(GlobalBase):
+    item_id: int
     room_id: str
-
-
-class ItemPublic(ItemBase):
-    title: str
-    content: str = ""

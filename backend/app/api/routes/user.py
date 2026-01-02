@@ -1,49 +1,61 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form, Response
+from fastapi import APIRouter, Depends, Form
 
-from app.api.dependencies import SessionDep, get_auth_user
-from app.cache import get_id_by_username, remove_session
-from app.constants import PWStringMetadata
-from app.crud import authenticate_user, delete_db, get_user_rooms
-from app.schemas import ReturnMessage, RoomsList, UserPrivate
+from app.api.dependencies import AuthDep, SessionDep
+from app.constants import PWStringMetadata, UsernameStringMetadata
+from app.core.security import get_current_user
+from app.exceptions import DuplicateDataError
+from app.schemas import Result, RoomsList
+from app.services import user as service
 
-router = APIRouter(tags=["user"])
+router = APIRouter(prefix="/user", tags=["user"])
 
 
-@router.get(
-    "/{username}",
-    dependencies=[Depends(get_auth_user)],
-    response_model=RoomsList,
-    response_description="return list of rooms associated with user",
-)
-async def user_home(
-    username: str,
-    user_id: Annotated[UUID, Depends(get_id_by_username)],
+@router.post("/signup", response_model=Result)
+async def create_user(
+    username: Annotated[str, Form(...), UsernameStringMetadata],
+    password: Annotated[str, Form(...), PWStringMetadata],
+    auth: AuthDep,
     db: SessionDep,
 ):
-    rooms = get_user_rooms(db, user_id)
+    result = await service.create_user(
+        username=username,
+        password=password,
+        db=db,
+        auth=auth,
+    )
+    if not result.success:
+        raise DuplicateDataError(result.detail)
+    return result
+
+
+@router.get("/{username}", response_model=RoomsList, response_description="list of user's rooms")
+async def user_home(
+    username: str,
+    user_id: Annotated[UUID, Depends(get_current_user)],
+    db: SessionDep,
+):
+    rooms = await service.get_user_home(
+        user_id=user_id,
+        username=username,
+        db=db,
+    )
     return rooms
 
 
-@router.delete(
-    "/{username}",
-    response_model=ReturnMessage,
-    response_description="ID of removed user",
-)
+@router.delete("/{username}", response_model=Result)
 async def delete_user(
-    username: str,
-    password: Annotated[str, Form(...), PWStringMetadata],
-    user_id: Annotated[UUID, Depends(get_id_by_username)],
-    session_id: Annotated[str, Depends(get_auth_user)],
+    user_id: Annotated[UUID, Depends(get_current_user)],
+    password: Annotated[str, Form(...)],
+    auth: AuthDep,
     db: SessionDep,
-    response: Response,
 ):
-    creds = UserPrivate(username=username, id=user_id, password=password)
-    data = authenticate_user(db, creds)
-    result = delete_db(db, data)
-
-    await remove_session(session_id)
-    response.delete_cookie(key="Authorization")
+    result = await service.delete_user(
+        user_id=user_id,
+        auth=auth,
+        password=password,
+        db=db,
+    )
     return result

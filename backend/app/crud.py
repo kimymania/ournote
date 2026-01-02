@@ -1,190 +1,181 @@
-from typing import TypeVar
+from typing import Any, Type
 from uuid import UUID
 
-from fastapi import HTTPException, status
-from sqlalchemy import delete, insert, select, text
-from sqlalchemy.exc import IntegrityError, NoResultFound, SQLAlchemyError
+from sqlalchemy import delete, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import update
 
-from app.core.security import verify_password
-from app.dbmodels import Items, Rooms, Users, room_membership
+from app.dbmodels import Items, Rooms, Users
+from app.dbmodels import room_membership as RoomMem
+from app.exceptions import DBError, NotFoundError
 from app.schemas import (
-    ItemPublic,
-    ReturnMessage,
-    RoomBase,
+    Item,
+    ItemsList,
+    Result,
+    Room,
     RoomPrivate,
-    RoomPublic,
     RoomsList,
     UserPrivate,
-    UserPublic,
 )
 
 
-def get_username_match(db: Session, username: str) -> bool:
-    stmt = select(Users).where(Users.username == username)
-    result = db.execute(stmt).scalar_one_or_none()
-    if result is None:
-        return False
-    return True
-
-
-T = TypeVar("T")
-
-
-def create_db(db: Session, data: object) -> UserPublic | RoomPublic | ItemPublic:
-    """:params data: any of Users, Rooms or Items"""
-    if isinstance(data, Users):
-        r = UserPublic(username=data.username)
-    elif isinstance(data, Rooms):
-        r = RoomPublic(id=data.id)
-    elif isinstance(data, Items):
-        r = ItemPublic(title=data.title, content=data.content)
-    else:
-        raise
-
+def create_db(db: Session, data: object) -> Result:
+    record = data.__repr__()  # so i don't have to add a refresh() after commit()
     try:
         db.add(data)
         db.commit()
-        db.refresh(data)
+    except IntegrityError:
+        db.rollback()
+        return Result(success=False, detail=f"{record} already exists in DB")
     except SQLAlchemyError as e:
         db.rollback()
-        raise e
-    return r
+        raise DBError from e
+    return Result(detail="succesfully created")
 
 
-def delete_db(db: Session, data: object) -> ReturnMessage:
-    """:params data: any of Users, Rooms or Items
+TABLE_ID_REGISTRY: dict[Any, Type] = {
+    UUID: Users,
+    str: Rooms,
+    int: Items,
+}
 
-    Associated data should be removed automatically - NEEDS FIXING"""
-    if isinstance(data, Users):
-        table = Users
-        r = data.username
-    elif isinstance(data, Rooms):
-        table = Rooms
-        r = data.id
-    elif isinstance(data, Items):
-        table = Items
-        r = data.id
-    else:
-        raise
+
+def delete_db(db: Session, id: Any, **kwargs) -> Result:
+    """:params data: any of User ID, Room ID or Item ID"""
+    table = TABLE_ID_REGISTRY.get(type(id))
+    if table is None:
+        raise DBError("Unknown type")
+
+    stmt = delete(table).where(table.id == id)
+    if isinstance(table, Items):
+        room_id = kwargs["room_id"]
+        stmt = stmt.where(table.room_id == room_id)
 
     try:
-        stmt = delete(table).where(table.id == data.id)
         db.execute(stmt)
         db.commit()
-
-        msg = ReturnMessage(msg=f"{r} deleted")
-        return msg
     except SQLAlchemyError as e:
         db.rollback()
-        raise e
+        raise DBError from e
+    return Result(detail="successfully deleted")
 
 
-def add_user_to_room(db: Session, user_id: UUID, room_id: str) -> dict[str, str]:
-    # Need to check if user has already joined the room
-    try:
-        db.execute(insert(room_membership).values(user_id=user_id, room_id=room_id))
-        db.commit()
-    except IntegrityError:
-        return {"status": "error: already_in_room"}
-    return {"status": "successfully joined room"}
-
-
-def user_leave_room(db: Session, user_id: UUID, room_id: str) -> dict[str, str]:
-    try:
-        db.execute(
-            delete(room_membership)
-            .where(room_membership.c.user_id == user_id)
-            .where(room_membership.c.room_id == room_id)
-        )
-        db.commit()
-        return {"status": "success"}
-    except SQLAlchemyError as e:
-        db.rollback()
-        return {"status": f"error: {e}"}
-
-
-def authenticate_user(db: Session, data: UserPrivate) -> UserPrivate:
-    stmt = select(Users).where(Users.id == data.id)
+def get_user_by_username(db: Session, username: str) -> UserPrivate:
+    stmt = select(Users).where(Users.username == username)
     result = db.execute(stmt).scalar_one_or_none()
-    if not result or not verify_password(data.password, result.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    if not result:
+        raise NotFoundError(f"user of {username} doesn't exist")
     user = UserPrivate(id=result.id, username=result.username, password=result.password)
     return user
 
 
-def authenticate_room(db: Session, data: RoomPrivate) -> None:
-    stmt = select(Rooms).where(Rooms.id == data.id)
+def get_user_by_id(db: Session, user_id: UUID) -> UserPrivate:
+    stmt = select(Users).where(Users.id == user_id)
     result = db.execute(stmt).scalar_one_or_none()
     if not result:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="room doesn't exist")
-    if verify_password(data.password, result.password) is False:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="wrong passcode")
-    return
+        raise NotFoundError(detail="user doesn't exist")
+    user = UserPrivate(id=result.id, username=result.username, password=result.password)
+    return user
 
 
-def get_user_rooms(db: Session, user_id: UUID) -> RoomsList:
-    stmt = select(room_membership).where(room_membership.c.user_id == user_id)
-    result = db.execute(stmt).all()
-    if result is None:
-        rooms_list = RoomsList(rooms=[])
-    else:
-        rooms_list = RoomsList(rooms=[RoomBase(id=r.room_id) for r in result])
+# def add_user_to_room(db: Session, user_id: UUID, room_id: str) -> Result:
+#     stmt = insert(RoomMem).values(user_id=user_id, room_id=room_id)
+#     try:
+#         db.execute(stmt)
+#         db.commit()
+#     except SQLAlchemyError:
+#         db.rollback()
+#         raise
+#     return Result(detail="successfully added user to room")
+
+
+def user_leave_room(db: Session, user_id: UUID, room_id: str) -> RoomsList:
+    """Remove user from room membership -> Return updated rooms list"""
+    stmt1 = delete(RoomMem).where(RoomMem.c.user_id == user_id).where(RoomMem.c.room_id == room_id)
+    stmt2 = select(RoomMem).where(RoomMem.c.user_id == user_id)
+    try:
+        db.execute(stmt1)
+        result = db.execute(stmt2).all()
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+    rooms_list = RoomsList(rooms=[Room(id=r.room_id) for r in result] if result else None)
     return rooms_list
 
 
-# def get_user_rooms(db: Session, user_id: UUID) -> RoomsList:
-#     result = db.execute(
-#         text("""
-#             SELECT rooms.id FROM rooms
-#             WHERE users.id = :user_id_var
-#             """),
-#         {"user_id_var": user_id}
-#     ).one_or_none()
+def insert_if_not_exists(db: Session, data: dict[str, Any]) -> Result:
+    if not db.bind:  # Suppress db.bind.dialect linter error - should not happen
+        raise DBError("Session is corrupt")
+
+    if db.bind.dialect.name == "postgresql":
+        insert = pg_insert
+    else:
+        insert = sqlite_insert
+    stmt = insert(RoomMem).values(**data)
+    pkeys = [c.name for c in RoomMem.primary_key]
+    try:
+        db.execute(stmt.on_conflict_do_nothing(index_elements=pkeys))
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+    return Result(detail="successfully entered room")
 
 
-def get_room(db: Session, room_id: str) -> RoomPublic:
-    """:returns: Room ID & List of items in room"""
-    result = db.execute(
-        text("""
-            SELECT rooms.id, items.title FROM rooms
-            LEFT JOIN items ON items.room_id = rooms.id
-            WHERE rooms.id = :room_id_var
-            """),
-        {"room_id_var": room_id},
-    ).all()
-    if len(result) == 0:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="room doesn't exist")
+def get_user_rooms(db: Session, user_id: UUID) -> RoomsList:
+    stmt = select(RoomMem).where(RoomMem.c.user_id == user_id)
+    result = db.execute(stmt).all()
+    rooms_list = RoomsList(rooms=[Room(id=r.room_id) for r in result] if result else None)
+    return rooms_list
 
-    id = result[0].id
-    items = [ItemPublic(title=item_title) for _, item_title in result if item_title]
-    room = RoomPublic(id=id, items=items)
+
+def get_room(db: Session, room_id: str) -> RoomPrivate:
+    stmt = select(Rooms.id, Rooms.password).where(Rooms.id == room_id)
+    result = db.execute(stmt).one_or_none()
+    if not result:
+        raise NotFoundError(detail="room doesn't exist")
+    id, password = result.tuple()
+    room = RoomPrivate(id=id, password=password)
     return room
 
 
-def get_item_data(db: Session, data: Items) -> ItemPublic:
+def get_all_room_items(db: Session, room_id: str) -> ItemsList:
+    """:returns: list of all items in room"""
+    stmt = select(Items.title).where(Items.room_id == room_id)
+    result = db.execute(stmt).scalars().all()
+    if len(result) == 0:
+        return ItemsList()
+    items = [Item(title=item_title) for item_title in result]
+    items_list = ItemsList(items=items)
+    return items_list
+
+
+def get_item(db: Session, data: Items) -> Result:
     stmt = select(Items).where(Items.room_id == data.room_id).where(Items.id == data.id)
-    try:
-        result = db.execute(stmt).scalar_one()
-    except NoResultFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="item doesn't exist")
-    item = ItemPublic(title=result.title, content=result.content)
-    return item
+    result = db.execute(stmt).scalar_one_or_none()
+    if result is None:
+        return Result(success=False, detail="Item doesn't exist")
+    item = Item(title=result.title, content=result.content)
+    return Result(detail="item found", data=item)
 
 
-def update_item(db: Session, data: Items) -> ItemPublic:
+def update_item(db: Session, data: Items) -> Result:
+    item = Item(title=data.title, content=data.content)
     stmt = (
         update(Items)
         .where(Items.room_id == data.room_id)
         .where(Items.id == data.id)
         .values(title=data.title, content=data.content)
     )
-    item = ItemPublic(title=data.title, content=data.content)
     try:
         db.execute(stmt)
         db.commit()
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         db.rollback()
-        raise e
-    return item
+        raise
+    result = Result(detail="successfully updated item", data=item)
+    return result
