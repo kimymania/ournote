@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'service.dart';
+import 'models.dart';
+
+final apiService = ApiService();
 
 void main() {
   runApp(const MyApp());
@@ -22,7 +26,7 @@ class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  _LoginPageState createState() => _LoginPageState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
@@ -33,18 +37,25 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
 
   void _handleLogin() async {
+    final username = _usernameController.text;
+    final password = _passwordController.text;
+
     setState(() => _isLoading = true);
 
     if (!_formKey.currentState!.validate()) {
       setState(() => _isLoading = false);
-      print("not validated");
+      if (kDebugMode) {
+        debugPrint("not validated");
+      }
     }
 
     try {
-      token = await sendAuthData(_usernameController.text, _passwordController.text);
+      token = await apiService.sendCredentials(username, password);
     } on Exception catch (exception) {
       setState(() => _isLoading = false);
-      print(exception);
+      if (kDebugMode) {
+        debugPrint("$exception");
+      }
     }
 
     setState(() => _isLoading = false);
@@ -53,7 +64,10 @@ class _LoginPageState extends State<LoginPage> {
     if (token != null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => UserDashboard(accessToken: token!)),
+        MaterialPageRoute(
+          builder: (context) =>
+              UserDashboard(accessToken: token!, username: username),
+        ),
       );
     } else {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -105,7 +119,13 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   children: [
                     TextFormField(
-                      validator: (value) => value!.isEmpty ? "Enter a username" : null,
+                      validator: (value) {
+                        if (value!.isEmpty) {
+                          return "Enter a valid username";
+                        } else {
+                          return "Null";
+                        }
+                      },
                       controller: _usernameController,
                       decoration: InputDecoration(
                         labelText: 'Username',
@@ -190,7 +210,7 @@ class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
   @override
-  _SignupPage createState() => _SignupPage();
+  State<SignupPage> createState() => _SignupPage();
 }
 
 class _SignupPage extends State<SignupPage> {
@@ -292,19 +312,58 @@ class _SignupPage extends State<SignupPage> {
   }
 }
 
-class UserDashboard extends StatefulWidget {
-  const UserDashboard({super.key, required String accessToken});
+class UserDashboard extends StatelessWidget {
+  final String accessToken;
+  final String username;
 
-  @override
-  _UserDashboard createState() => _UserDashboard();
-}
+  const UserDashboard({
+    super.key,
+    required this.accessToken,
+    required this.username,
+  });
 
-class _UserDashboard extends State<UserDashboard> {
+  Future<List<Room>> _getRoomsList() async {
+    final Result result = await apiService.fetch('/user/$username');
+    final List<Room> roomsList = result.data;
+    return roomsList;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Dashboard')),
-      body: Padding(padding: const EdgeInsets.symmetric(horizontal: 8.0)),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: Column(
+          mainAxisAlignment: .center,
+          crossAxisAlignment: .center,
+          children: [
+            FutureBuilder(
+              future: _getRoomsList(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData && !snapshot.hasError) {
+                  return Center(child: Text("Loading..."));
+                } else if (snapshot.hasError) {
+                  return Center(child: Text("$snapshot.error"));
+                } else if (snapshot.hasData) {
+                  return ListView.builder(
+                    itemCount: snapshot.data!.length,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        padding: EdgeInsets.all(8),
+                        child: Text(snapshot.data![index].id),
+                      );
+                    },
+                  );
+                  // return Text(snapshot.data.toString());
+                } else {
+                  return Text("No value yet");
+                }
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
