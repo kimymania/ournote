@@ -4,7 +4,13 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from app.core.security import Authenticator
-from app.crud import create_db, delete_db, get_user_by_id, get_user_by_username, get_user_rooms
+from app.crud import (
+    create_db,
+    delete_db,
+    get_user_by_id,
+    get_user_by_username,
+    get_user_rooms,
+)
 from app.dbmodels import Users as UserDB
 from app.exceptions import AuthenticationError, NotFoundError
 from app.schemas import Result, RoomsList, User, UserCreate
