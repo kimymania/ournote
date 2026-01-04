@@ -16,27 +16,42 @@ class _ItemViewState extends State<ItemView> {
     final contentController = TextEditingController(text: widget.content);
 
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        title: SizedBox(
+          height: kToolbarHeight,
+          child: Column(
+            mainAxisAlignment: .center,
+            crossAxisAlignment: .start,
+            children: [
+              TextField(
+                controller: titleController,
+                style: TextStyle(fontSize: 22, fontWeight: .bold),
+                decoration: InputDecoration(
+                  hintText: 'Title',
+                  hintMaxLines: 1,
+                  border: .none,
+                ),
+              ),
+            ],
+          ),
+        ),
+        toolbarHeight: kToolbarHeight,
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           mainAxisAlignment: .start,
           crossAxisAlignment: .start,
           children: [
-            Row(
-              mainAxisAlignment: .center,
-              crossAxisAlignment: .start,
-              spacing: 8,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: titleController,
-                    style: TextStyle(fontSize: 20, fontWeight: .bold),
-                    decoration: InputDecoration(border: .none),
-                  ),
-                ),
-              ],
-            ),
+            // SizedBox(
+            //   height: 80,
+            //   width: double.infinity,
+            //   child: TextField(
+            //     controller: titleController,
+            //     style: TextStyle(fontSize: 20, fontWeight: .bold),
+            //     decoration: InputDecoration(border: .none),
+            //   ),
+            // ),
             Expanded(
               child: TextField(
                 controller: contentController,

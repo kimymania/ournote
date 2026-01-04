@@ -49,25 +49,12 @@ class UserView extends StatelessWidget {
                             ),
                           );
                         },
-                        child: Container(
-                          padding: EdgeInsets.all(8),
-                          decoration: ShapeDecoration(
-                            color: Colors.green[50],
-                            shape: RoundedSuperellipseBorder(
-                              borderRadius: .circular(20),
-                              side: BorderSide(color: Color(0xAA1C1C1C)),
-                            ),
-                          ),
-                          height: 80,
-                          child: Center(
-                            child: Text(
-                              buttonValue,
-                              style: TextStyle(
-                                color: Color(0xFF1C1C1C),
-                                fontSize: 20,
-                                fontWeight: .bold,
-                              ),
-                            ),
+                        child: Text(
+                          buttonValue,
+                          style: TextStyle(
+                            color: Color(0xFF1C1C1C),
+                            fontSize: 20,
+                            fontWeight: .bold,
                           ),
                         ),
                       );

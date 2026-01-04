@@ -47,13 +47,14 @@ class _RoomViewState extends State<RoomView> {
         actions: [
           IconButton(onPressed: () => _addNewItem(), icon: const Icon(Icons.add)),
         ],
-        actionsPadding: EdgeInsets.symmetric(horizontal: 8),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 8),
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Column(
           mainAxisAlignment: .start,
           crossAxisAlignment: .start,
+          spacing: 8,
           children: [
             FutureBuilder(
               future: _handleItems(),
@@ -76,25 +77,12 @@ class _RoomViewState extends State<RoomView> {
                             ),
                           );
                         },
-                        child: Container(
-                          padding: EdgeInsets.all(8),
-                          decoration: ShapeDecoration(
-                            color: Colors.green[50],
-                            shape: RoundedSuperellipseBorder(
-                              borderRadius: .circular(20),
-                              side: BorderSide(color: Color(0xAA1C1C1C)),
-                            ),
-                          ),
-                          height: 80,
-                          child: Center(
-                            child: Text(
-                              buttonValue,
-                              style: TextStyle(
-                                color: Color(0xFF1C1C1C),
-                                fontSize: 20,
-                                fontWeight: .bold,
-                              ),
-                            ),
+                        child: Text(
+                          buttonValue,
+                          style: TextStyle(
+                            color: Color(0xFF1C1C1C),
+                            fontSize: 20,
+                            fontWeight: .bold,
                           ),
                         ),
                       );
