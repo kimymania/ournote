@@ -145,11 +145,11 @@ def get_room(db: Session, room_id: str) -> RoomPrivate:
 
 def get_all_room_items(db: Session, room_id: str) -> ItemsList:
     """:returns: list of all items in room"""
-    stmt = select(Items.title).where(Items.room_id == room_id)
-    result = db.execute(stmt).scalars().all()
+    stmt = select(Items.id, Items.title).where(Items.room_id == room_id)
+    result = db.execute(stmt).all()
     if len(result) == 0:
         return ItemsList()
-    items = [Item(title=item_title) for item_title in result]
+    items = [Item(id=item[0], title=item[1]) for item in result]
     items_list = ItemsList(items=items)
     return items_list
 
@@ -159,12 +159,12 @@ def get_item(db: Session, data: Items) -> Result:
     result = db.execute(stmt).scalar_one_or_none()
     if result is None:
         return Result(success=False, detail="Item doesn't exist")
-    item = Item(title=result.title, content=result.content)
+    item = Item(id=result.id, title=result.title, content=result.content)
     return Result(detail="item found", data=item)
 
 
 def update_item(db: Session, data: Items) -> Result:
-    item = Item(title=data.title, content=data.content)
+    item = Item(id=data.id, title=data.title, content=data.content)
     stmt = (
         update(Items)
         .where(Items.room_id == data.room_id)

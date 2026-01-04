@@ -54,12 +54,12 @@ class ItemsList(GlobalBase):
 
 
 class Item(GlobalBase):
+    id: int | None = None
     title: str
     content: str | None = None
 
 
 class ItemModifier(Item):
-    id: int | None = None
     room_id: str
 
 

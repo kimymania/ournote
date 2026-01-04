@@ -24,7 +24,7 @@ async def login(
         return Token(access_token=access_token)
 
 
-@router.post("/room_id", response_model=Result, response_description="Generated Room ID")
+@router.get("/room_id", response_model=Result, response_description="Generated Room ID")
 async def generate_id():
     result = generate_room_id()
     return result

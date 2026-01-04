@@ -36,10 +36,19 @@ class RoomsList {
 }
 
 class Item {
+  final int id;
   final String title;
   final String? content;
 
-  const Item({required this.title, this.content});
+  const Item({required this.id, required this.title, this.content});
+
+  factory Item.fromJson(Map<String, dynamic> json) {
+    return Item(
+      id: json['id'] as int,
+      title: json['title'] as String,
+      content: json['content'] as String,
+    );
+  }
 }
 
 class ItemsList {
@@ -54,7 +63,7 @@ class ItemsList {
 
     List<Item> itemsList = [];
     for (Map<String, dynamic> data in json['items']) {
-      Item item = Item(title: data['title']!, content: data['content']);
+      Item item = Item(id: data['id'], title: data['title'], content: data['content']);
       itemsList.add(item);
     }
     return ItemsList(list: itemsList);

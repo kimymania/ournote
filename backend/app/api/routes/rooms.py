@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Form
 
 from app.api.dependencies import AuthDep, SessionDep
-from app.constants import PWStringMetadata, RoomPINMetadata
+from app.constants import PWStringMetadata, RoomIDMetadata, RoomPINMetadata
 from app.core.security import get_current_user
 from app.schemas import ItemsList, Result, RoomsList
 from app.services import rooms as service
@@ -14,8 +14,8 @@ router = APIRouter(prefix="/room", tags=["room"])
 
 @router.post("/create", response_model=Result)
 async def create_room(
-    user_id: Annotated[UUID, Depends(get_current_user)],
-    room_id: str,
+    _: Annotated[UUID, Depends(get_current_user)],
+    room_id: Annotated[str, Form(...), RoomIDMetadata],
     room_pw: Annotated[str, Form(...), RoomPINMetadata],
     db: SessionDep,
     auth: AuthDep,

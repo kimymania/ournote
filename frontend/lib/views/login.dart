@@ -101,12 +101,8 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(
                   children: [
                     TextFormField(
-                      validator: (value) {
-                        if (value!.isEmpty) {
-                          return "Enter a valid username";
-                        } else {
-                          return "Null";
-                        }
+                      validator: (String? value) {
+                        return value!.isEmpty ? "Enter a username" : null;
                       },
                       controller: _usernameController,
                       decoration: InputDecoration(

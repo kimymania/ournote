@@ -15,27 +15,49 @@ class RoomView extends StatefulWidget {
 }
 
 class _RoomViewState extends State<RoomView> {
-  Future<List<Item>> _handleItems() async {
+  Future<List<Item>> _handleItemsList() async {
     final ItemsList result = await apiService.fetchItemsList(widget.roomID, widget.token);
     final List<Item> itemList = result.list;
     return itemList;
   }
 
-  String _getItemContent(String? content) {
-    if (content == null) {
-      return '';
-    } else {
-      return content;
-    }
+  void _viewItem(int itemID) async {
+    String roomID = widget.roomID;
+    final Result result = await apiService.fetch(
+      'room/$roomID/item/$itemID',
+      widget.token,
+    );
+    final Item item = Item.fromJson(result.data);
+
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ItemView(
+          roomID: roomID,
+          itemID: item.id,
+          title: item.title,
+          content: item.content,
+          newItem: false,
+        ),
+      ),
+    ).then((value) {
+      if (!mounted) return;
+      setState(() {});
+    });
   }
 
   void _addNewItem() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ItemView(title: 'New Item', content: ''),
+        builder: (context) =>
+            ItemView(roomID: widget.roomID, title: 'New Item', content: ''),
       ),
-    );
+    ).then((value) {
+      if (!mounted) return;
+      setState(() {});
+    });
   }
 
   @override
@@ -57,7 +79,7 @@ class _RoomViewState extends State<RoomView> {
           spacing: 8,
           children: [
             FutureBuilder(
-              future: _handleItems(),
+              future: _handleItemsList(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(child: Text("$snapshot.error"));
@@ -65,20 +87,12 @@ class _RoomViewState extends State<RoomView> {
                   return ListView.builder(
                     itemCount: snapshot.data!.length,
                     itemBuilder: (context, index) {
-                      String buttonValue = snapshot.data![index].title;
-                      String itemContent = _getItemContent(snapshot.data![index].content);
+                      int itemID = snapshot.data![index].id;
+                      String itemTitle = snapshot.data![index].title;
                       return ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  ItemView(title: buttonValue, content: itemContent),
-                            ),
-                          );
-                        },
+                        onPressed: () => _viewItem(itemID),
                         child: Text(
-                          buttonValue,
+                          itemTitle,
                           style: TextStyle(
                             color: Color(0xFF1C1C1C),
                             fontSize: 20,
@@ -87,7 +101,7 @@ class _RoomViewState extends State<RoomView> {
                         ),
                       );
                     },
-                    scrollDirection: Axis.vertical,
+                    scrollDirection: .vertical,
                     shrinkWrap: true,
                   );
                 } else {

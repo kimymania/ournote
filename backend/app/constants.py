@@ -1,7 +1,8 @@
 from pydantic import StringConstraints
 
-USERNAME_PATTERN = r"^[a-zA-z0-9-.]+$"
-PASSWORD_PATTERN = r"^[a-zA-z0-9!@#$%^&*-.]+$"
+USERNAME_PATTERN = r"^[a-zA-Z0-9-.]+$"
+PASSWORD_PATTERN = r"^[a-zA-Z0-9!@#$%^&*-.]+$"
+ROOMID_PATTERN = r"^[a-zA-Z0-9]+$"
 PIN_PATTERN = r"\d"
 
 UsernameStringMetadata = StringConstraints(
@@ -19,7 +20,15 @@ PWStringMetadata = StringConstraints(
     strict=True,
     min_length=2,
     max_length=16,
-    pattern=USERNAME_PATTERN,
+    pattern=PASSWORD_PATTERN,
+)
+
+RoomIDMetadata = StringConstraints(
+    strip_whitespace=True,
+    strict=True,
+    min_length=8,
+    max_length=8,
+    pattern=ROOMID_PATTERN,
 )
 
 RoomPINMetadata = StringConstraints(
