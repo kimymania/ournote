@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.dependencies import AuthDep, SessionDep
-from app.schemas import Result, Token
+from app.schemas import GeneratedID, Token
 from app.services import user
 from app.services.rooms import generate_room_id
 
@@ -24,7 +24,8 @@ async def login(
         return Token(access_token=access_token)
 
 
-@router.get("/room_id", response_model=Result, response_description="Generated Room ID")
+@router.get("/room_id", response_model=GeneratedID, response_description="Generated Room ID")
 async def generate_id():
     result = generate_room_id()
-    return result
+    id = result.data
+    return GeneratedID(id=id)

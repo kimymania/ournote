@@ -36,7 +36,7 @@ class _ItemViewState extends State<ItemView> {
   void _saveNewItem() {
     String title = _titleController.text;
     String content = _contentController.text;
-    apiService.saveNewItem(widget.roomID, title, content);
+    apiService.createNewItem(widget.roomID, title, content);
   }
 
   void _updateItem() {

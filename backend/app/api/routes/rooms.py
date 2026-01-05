@@ -59,7 +59,7 @@ async def join_room(
 
 
 @router.get("/{room_id}", response_model=ItemsList, response_description="list of items in room")
-async def get_room(
+async def get_room_contents(
     _: Annotated[UUID, Depends(get_current_user)],
     room_id: str,
     db: SessionDep,

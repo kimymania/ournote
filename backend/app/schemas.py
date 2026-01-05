@@ -15,6 +15,10 @@ class Token(GlobalBase):
     token_type: str = "bearer"
 
 
+class GeneratedID(GlobalBase):
+    id: str
+
+
 class Result(GlobalBase):
     success: bool = True
     detail: str

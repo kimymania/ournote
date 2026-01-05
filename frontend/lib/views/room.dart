@@ -23,11 +23,7 @@ class _RoomViewState extends State<RoomView> {
 
   void _viewItem(int itemID) async {
     String roomID = widget.roomID;
-    final Result result = await apiService.fetch(
-      'room/$roomID/item/$itemID',
-      widget.token,
-    );
-    final Item item = Item.fromJson(result.data);
+    final Item item = await apiService.fetchItem(roomID, itemID, widget.token);
 
     if (!mounted) return;
     Navigator.push(
@@ -89,14 +85,25 @@ class _RoomViewState extends State<RoomView> {
                     itemBuilder: (context, index) {
                       int itemID = snapshot.data![index].id;
                       String itemTitle = snapshot.data![index].title;
-                      return ElevatedButton(
-                        onPressed: () => _viewItem(itemID),
-                        child: Text(
-                          itemTitle,
-                          style: TextStyle(
-                            color: Color(0xFF1C1C1C),
-                            fontSize: 20,
-                            fontWeight: .bold,
+                      return Dismissible(
+                        key: ValueKey<Item>(snapshot.data![index]),
+                        background: Container(
+                          color: Colors.red,
+                          child: Icon(Icons.delete, color: Colors.white),
+                        ),
+                        onDismissed: (direction) {
+                          apiService.deleteItem(widget.roomID, itemID);
+                          setState(() => snapshot.data!.removeAt(index));
+                        },
+                        child: ElevatedButton(
+                          onPressed: () => _viewItem(itemID),
+                          child: Text(
+                            itemTitle,
+                            style: TextStyle(
+                              color: Color(0xFF1C1C1C),
+                              fontSize: 20,
+                              fontWeight: .bold,
+                            ),
                           ),
                         ),
                       );

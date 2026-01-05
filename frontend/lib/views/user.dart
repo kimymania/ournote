@@ -16,6 +16,7 @@ class UserView extends StatefulWidget {
 
 class _UserViewState extends State<UserView> {
   final _roomPWController = TextEditingController();
+  final _userPWController = TextEditingController();
 
   Future<List<Room>> _getRoomsList() async {
     final RoomsList result = await apiService.fetchRoomsList(
@@ -151,6 +152,60 @@ class _UserViewState extends State<UserView> {
     });
   }
 
+  Future<void> _handleLeaveRoom(Room room) async {
+    await apiService.leaveRoom(
+      room.id,
+      widget.username,
+      _userPWController.text,
+      widget.accessToken,
+    );
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _leaveRoomDialog(BuildContext context, Room roomKey) async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Leave room?'),
+          content: Container(
+            height: 40,
+            width: 100,
+            alignment: .center,
+            child: TextFormField(
+              validator: (String? value) {
+                return value!.isEmpty ? "Enter password" : null;
+              },
+              controller: _roomPWController,
+              decoration: InputDecoration.collapsed(
+                hintText: 'Password',
+                hintMaxLines: 1,
+                border: .none,
+              ),
+              obscureText: true,
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('OK', textAlign: .end),
+              onPressed: () => _handleLeaveRoom(roomKey),
+            ),
+            TextButton(
+              child: const Text('Cancel', textAlign: .end),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+          constraints: .tightFor(height: 270, width: 400),
+        );
+      },
+    ).then((value) {
+      if (!mounted) return;
+      setState(() {});
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -180,19 +235,29 @@ class _UserViewState extends State<UserView> {
                     itemCount: snapshot.data!.length,
                     itemBuilder: (context, index) {
                       String roomID = snapshot.data![index].id;
-                      return ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => _enterRoom(roomID)),
-                          );
-                        },
-                        child: Text(
-                          roomID,
-                          style: TextStyle(
-                            color: Color(0xFF1C1C1C),
-                            fontSize: 20,
-                            fontWeight: .bold,
+                      ValueKey<Room> roomKey = ValueKey<Room>(snapshot.data![index]);
+                      return Dismissible(
+                        key: roomKey,
+                        background: Container(
+                          color: Colors.red,
+                          child: Icon(Icons.remove_circle, color: Colors.white),
+                        ),
+                        onDismissed: (direction) =>
+                            _leaveRoomDialog(context, roomKey.value),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => _enterRoom(roomID)),
+                            );
+                          },
+                          child: Text(
+                            roomID,
+                            style: TextStyle(
+                              color: Color(0xFF1C1C1C),
+                              fontSize: 20,
+                              fontWeight: .bold,
+                            ),
                           ),
                         ),
                       );
