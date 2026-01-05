@@ -19,6 +19,7 @@ class Result(GlobalBase):
     success: bool = True
     detail: str
     data: Any | None = None
+    status_code: int | None = None
 
 
 class User(GlobalBase):

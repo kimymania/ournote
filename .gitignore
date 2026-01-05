@@ -14,3 +14,6 @@ wheels/
 # Files generated for local tests
 local.db
 local.db-journal
+
+# Environment variables
+.env

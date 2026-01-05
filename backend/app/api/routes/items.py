@@ -1,15 +1,18 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Body
+from starlette import status
+from starlette.responses import Response
 
 from app.api.dependencies import SessionDep
-from app.schemas import Result
+from app.exceptions import DBError, DuplicateDataError, NotFoundError
+from app.schemas import Item
 from app.services import items as service
 
 router = APIRouter(prefix="/room", tags=["items"])
 
 
-@router.post("/{room_id}/item/create", response_model=Result)
+@router.post("/{room_id}/item/create", response_class=Response)
 async def create_item(
     room_id: str,
     db: SessionDep,
@@ -22,10 +25,12 @@ async def create_item(
         content=content,
         db=db,
     )
-    return result
+    if result.success:
+        return Response(status_code=status.HTTP_201_CREATED)
+    raise DuplicateDataError
 
 
-@router.get("/{room_id}/item/{item_id}", response_model=Result)
+@router.get("/{room_id}/item/{item_id}", response_model=Item)
 async def view_existing_item(
     room_id: str,
     item_id: int,
@@ -36,10 +41,12 @@ async def view_existing_item(
         item_id=item_id,
         db=db,
     )
-    return result
+    if result:
+        return result
+    raise NotFoundError
 
 
-@router.put("/{room_id}/item/{item_id}", response_model=Result)
+@router.put("/{room_id}/item/{item_id}", response_model=Item)
 async def edit_item(
     room_id: str,
     item_id: int,
@@ -54,10 +61,12 @@ async def edit_item(
         content=content,
         db=db,
     )
-    return result
+    if result:
+        return result
+    raise NotFoundError
 
 
-@router.delete("/{room_id}/item/{item_id}", response_model=Result)
+@router.delete("/{room_id}/item/{item_id}", response_class=Response)
 async def delete_item(
     room_id: str,
     item_id: int,
@@ -68,4 +77,6 @@ async def delete_item(
         item_id=item_id,
         db=db,
     )
-    return result
+    if result.success:
+        return Response(status_code=status.HTTP_200_OK)
+    raise DBError

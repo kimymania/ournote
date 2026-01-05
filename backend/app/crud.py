@@ -29,10 +29,10 @@ def create_db(db: Session, data: object) -> Result:
         db.commit()
     except IntegrityError:
         db.rollback()
-        return Result(success=False, detail=f"{record} already exists in DB")
-    except SQLAlchemyError as e:
+        return Result(success=False, detail=f"{record} already exists in DB", status_code=409)
+    except SQLAlchemyError:
         db.rollback()
-        raise DBError from e
+        return Result(success=False, detail="DB error", status_code=500)
     return Result(detail="succesfully created")
 
 
@@ -53,13 +53,12 @@ def delete_db(db: Session, id: Any, **kwargs) -> Result:
     if isinstance(table, Items):
         room_id = kwargs["room_id"]
         stmt = stmt.where(table.room_id == room_id)
-
     try:
         db.execute(stmt)
         db.commit()
     except SQLAlchemyError as e:
         db.rollback()
-        raise DBError from e
+        return Result(success=False, detail=f"error: {e}")
     return Result(detail="successfully deleted")
 
 
@@ -81,17 +80,6 @@ def get_user_by_id(db: Session, user_id: UUID) -> UserPrivate:
     return user
 
 
-# def add_user_to_room(db: Session, user_id: UUID, room_id: str) -> Result:
-#     stmt = insert(RoomMem).values(user_id=user_id, room_id=room_id)
-#     try:
-#         db.execute(stmt)
-#         db.commit()
-#     except SQLAlchemyError:
-#         db.rollback()
-#         raise
-#     return Result(detail="successfully added user to room")
-
-
 def user_leave_room(db: Session, user_id: UUID, room_id: str) -> RoomsList:
     """Remove user from room membership -> Return updated rooms list"""
     stmt1 = delete(RoomMem).where(RoomMem.c.user_id == user_id).where(RoomMem.c.room_id == room_id)
@@ -100,9 +88,9 @@ def user_leave_room(db: Session, user_id: UUID, room_id: str) -> RoomsList:
         db.execute(stmt1)
         result = db.execute(stmt2).all()
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        raise
+        raise DBError from e
     rooms_list = RoomsList(rooms=[Room(id=r.room_id) for r in result] if result else None)
     return rooms_list
 
@@ -120,9 +108,9 @@ def insert_if_not_exists(db: Session, data: dict[str, Any]) -> Result:
     try:
         db.execute(stmt.on_conflict_do_nothing(index_elements=pkeys))
         db.commit()
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.rollback()
-        raise
+        return Result(success=False, detail="DB operation failure", data=e, status_code=500)
     return Result(detail="successfully entered room")
 
 
@@ -158,7 +146,7 @@ def get_item(db: Session, data: Items) -> Result:
     stmt = select(Items).where(Items.room_id == data.room_id).where(Items.id == data.id)
     result = db.execute(stmt).scalar_one_or_none()
     if result is None:
-        return Result(success=False, detail="Item doesn't exist")
+        return Result(success=False, detail="item doesn't exist")
     item = Item(id=result.id, title=result.title, content=result.content)
     return Result(detail="item found", data=item)
 

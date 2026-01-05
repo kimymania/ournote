@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.crud import create_db, delete_db, get_item, update_item
 from app.dbmodels import Items
-from app.schemas import ItemModifier, ItemPrivate, Result
+from app.schemas import Item, ItemModifier, ItemPrivate, Result
 
 
 async def create_item(
@@ -21,11 +21,12 @@ async def view_existing_item(
     room_id: str,
     item_id: int,
     db: Session,
-) -> Result:
+) -> Item | None:
     priv = ItemPrivate(item_id=item_id, room_id=room_id)
     data = Items(id=priv.item_id, room_id=priv.room_id)
     result = get_item(db, data)
-    return result
+    item = result.data
+    return item
 
 
 async def edit_item(
@@ -34,11 +35,12 @@ async def edit_item(
     db: Session,
     title: str,
     content: str | None = None,
-) -> Result:
+) -> Item | None:
     edit = ItemModifier(id=item_id, title=title, content=content, room_id=room_id)
     data = Items(**edit.model_dump())
     result = update_item(db, data)
-    return result
+    item = result.data
+    return item
 
 
 async def delete_item(

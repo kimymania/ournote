@@ -2,17 +2,20 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form
+from starlette import status
+from starlette.responses import Response
 
 from app.api.dependencies import AuthDep, SessionDep
 from app.constants import PWStringMetadata, RoomIDMetadata, RoomPINMetadata
 from app.core.security import get_current_user
-from app.schemas import ItemsList, Result, RoomsList
+from app.exceptions import DBError, DuplicateDataError
+from app.schemas import ItemsList, RoomsList
 from app.services import rooms as service
 
 router = APIRouter(prefix="/room", tags=["room"])
 
 
-@router.post("/create", response_model=Result)
+@router.post("/create", response_class=Response)
 async def create_room(
     _: Annotated[UUID, Depends(get_current_user)],
     room_id: Annotated[str, Form(...), RoomIDMetadata],
@@ -26,10 +29,15 @@ async def create_room(
         db=db,
         auth=auth,
     )
-    return result
+    if result.success:
+        return Response(status_code=status.HTTP_201_CREATED)
+    if result.status_code == 409:
+        raise DuplicateDataError
+    elif result.status_code == 500:
+        raise DBError
 
 
-@router.post("/{room_id}", response_model=Result)
+@router.post("/{room_id}", response_class=Response)
 async def join_room(
     user_id: Annotated[UUID, Depends(get_current_user)],
     room_id: str,
@@ -44,7 +52,10 @@ async def join_room(
         db=db,
         auth=auth,
     )
-    return result
+    if result.success:
+        return Response(status_code=status.HTTP_200_OK)
+    if result.status_code == 500:
+        raise DBError
 
 
 @router.get("/{room_id}", response_model=ItemsList, response_description="list of items in room")
@@ -57,7 +68,7 @@ async def get_room(
     return result
 
 
-@router.delete("/{room_id}", response_model=Result)
+@router.delete("/{room_id}", response_class=Response)
 async def delete_room(
     _: Annotated[UUID, Depends(get_current_user)],
     room_id: str,
@@ -71,7 +82,9 @@ async def delete_room(
         db=db,
         auth=auth,
     )
-    return result
+    if result.success:
+        return Response(status_code=status.HTTP_200_OK)
+    raise DBError
 
 
 @router.delete(

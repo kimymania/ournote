@@ -18,6 +18,6 @@ app = FastAPI(
     lifespan=lifespan,
     title=settings.app_name,
     version=settings.version,
-    prefix=settings.API_V1_STR,
+    prefix=settings.api_v1_url,
 )
 app.include_router(api.router)

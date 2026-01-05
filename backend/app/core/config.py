@@ -2,11 +2,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env")
     app_name: str = "OurNote"
     version: str = "0.1.0"
-    API_V1_STR: str = "/api/v1"
+    api_v1_url: str = "/api/v1"
+    port: int = 8000
+    jwt_secret_key: str = ""
+    jwt_algorithm: str = "HS256"
+    jwt_exp_time: int = 15
 
+    model_config = SettingsConfigDict(env_file=".env")
     # POSTGRES_SERVER: str
     # POSTGRES_PORT: int = 5432
     # POSTGRES_USER: str

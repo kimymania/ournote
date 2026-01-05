@@ -20,10 +20,10 @@ class AuthorizationError(HTTPException):
 
 
 class DuplicateDataError(HTTPException):
-    def __init__(self, data: str):
+    def __init__(self):
         super().__init__(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"{data} already exists in DB",
+            detail="data already exists in DB",
         )
 
 

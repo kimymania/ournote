@@ -2,27 +2,24 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from uuid import UUID
 
-from app import crud
-from app.exceptions import AuthenticationError, NotFoundError
-from app.schemas import RoomPrivate, User, UserPrivate
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pwdlib import PasswordHash
 from sqlalchemy.orm import Session
 
-# Temporary
-SECRET_KEY = "9A2D253F008E9667ECE093F3C427CC8689107B3299172E3C5DE0DF65AA24125E"
-ALGORITHM = "HS256"
-EXPIRATION_TIME = 15
+from app import crud
+from app.core.config import settings
+from app.exceptions import AuthenticationError, NotFoundError
+from app.schemas import RoomPrivate, User, UserPrivate
 
 
 class Authenticator:
     def __init__(
         self,
-        secret_key: str = SECRET_KEY,
-        algorithm: str = "HS256",
-        expiration_time: int = 15,
+        secret_key: str = settings.jwt_secret_key,
+        algorithm: str = settings.jwt_algorithm,
+        expiration_time: int = settings.jwt_exp_time,
     ):
         self.secret_key = secret_key
         self.algorithm = algorithm
@@ -74,8 +71,8 @@ def decode_token(token: str) -> UUID:
     try:
         payload = jwt.decode(
             token,
-            SECRET_KEY,
-            algorithms=ALGORITHM,
+            settings.jwt_secret_key,
+            algorithms=settings.jwt_algorithm,
             options={
                 "require_sub": True,
                 "require_exp": True,
