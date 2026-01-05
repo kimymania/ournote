@@ -13,5 +13,15 @@ dependencies = [
     "sqlalchemy>=2.0.45",
 ]
 
+[tool.ruff]
+src = ["app"]
+
 [tool.ty.environment]
+python = ".venv"
 root = ["./app"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.10",
+    "ty>=0.0.8",
+]
