@@ -18,7 +18,7 @@ src = ["app"]
 
 [tool.ty.environment]
 python = ".venv"
-root = ["./app"]
+root = ["./"]
 
 [dependency-groups]
 dev = [
