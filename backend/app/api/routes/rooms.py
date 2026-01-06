@@ -9,28 +9,29 @@ from app.api.dependencies import AuthDep, SessionDep
 from app.constants import PWStringMetadata, RoomIDMetadata, RoomPINMetadata
 from app.core.security import get_current_user
 from app.exceptions import DBError, DuplicateDataError
-from app.schemas import ItemsList, RoomsList
+from app.schemas import ItemsList
 from app.services import rooms as service
 
 router = APIRouter(prefix="/room", tags=["room"])
 
 
-@router.post("/create", response_class=Response)
+@router.post("/create", status_code=201)
 async def create_room(
-    _: Annotated[UUID, Depends(get_current_user)],
+    user_id: Annotated[UUID, Depends(get_current_user)],
     room_id: Annotated[str, Form(...), RoomIDMetadata],
     room_pw: Annotated[str, Form(...), RoomPINMetadata],
     db: SessionDep,
     auth: AuthDep,
 ):
     result = await service.create_room(
+        user_id=user_id,
         room_id=room_id,
         room_pw=room_pw,
         db=db,
         auth=auth,
     )
     if result.success:
-        return Response(status_code=status.HTTP_201_CREATED)
+        return
     if result.status_code == 409:
         raise DuplicateDataError
     elif result.status_code == 500:
@@ -89,8 +90,7 @@ async def delete_room(
 
 @router.delete(
     "/{room_id}/{username}",
-    response_model=RoomsList,
-    response_description="Updated list of rooms",
+    response_class=Response,
 )
 async def leave_room(
     user_id: Annotated[UUID, Depends(get_current_user)],
@@ -108,4 +108,6 @@ async def leave_room(
         db=db,
         auth=auth,
     )
-    return result
+    if result.success:
+        return Response(status_code=status.HTTP_200_OK)
+    raise DBError

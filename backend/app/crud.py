@@ -80,19 +80,17 @@ def get_user_by_id(db: Session, user_id: UUID) -> UserPrivate:
     return user
 
 
-def user_leave_room(db: Session, user_id: UUID, room_id: str) -> RoomsList:
-    """Remove user from room membership -> Return updated rooms list"""
-    stmt1 = delete(RoomMem).where(RoomMem.c.user_id == user_id).where(RoomMem.c.room_id == room_id)
-    stmt2 = select(RoomMem).where(RoomMem.c.user_id == user_id)
+def user_leave_room(db: Session, user_id: UUID, room_id: str) -> Result:
+    """Remove user from room membership"""
+    stmt = delete(RoomMem).where(RoomMem.c.user_id == user_id).where(RoomMem.c.room_id == room_id)
     try:
-        db.execute(stmt1)
-        result = db.execute(stmt2).all()
+        db.execute(stmt)
         db.commit()
     except SQLAlchemyError as e:
         db.rollback()
-        raise DBError from e
-    rooms_list = RoomsList(rooms=[Room(id=r.room_id) for r in result] if result else None)
-    return rooms_list
+        # raise DBError from e
+        return Result(success=False, detail="failed to leave room", data=e)
+    return Result(detail="leave room successful")
 
 
 def insert_if_not_exists(db: Session, data: dict[str, Any]) -> Result:

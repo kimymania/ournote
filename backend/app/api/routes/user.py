@@ -2,8 +2,6 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form
-from starlette import status
-from starlette.responses import Response
 
 from app.api.dependencies import AuthDep, SessionDep
 from app.constants import PWStringMetadata, UsernameStringMetadata
@@ -15,7 +13,7 @@ from app.services import user as service
 router = APIRouter(prefix="/user", tags=["user"])
 
 
-@router.post("/signup", response_class=Response)
+@router.post("/signup", status_code=201)
 async def create_user(
     username: Annotated[str, Form(...), UsernameStringMetadata],
     password: Annotated[str, Form(...), PWStringMetadata],
@@ -29,7 +27,7 @@ async def create_user(
         auth=auth,
     )
     if result.success:
-        return Response(status_code=status.HTTP_201_CREATED)
+        return
     raise DuplicateDataError
 
 
@@ -47,7 +45,7 @@ async def user_home(
     return rooms
 
 
-@router.delete("/{username}", response_class=Response)
+@router.delete("/{username}", status_code=200)
 async def delete_user(
     user_id: Annotated[UUID, Depends(get_current_user)],
     password: Annotated[str, Form(...)],
@@ -61,5 +59,5 @@ async def delete_user(
         db=db,
     )
     if result.success:
-        return Response(status_code=status.HTTP_200_OK)
+        return
     raise DBError

@@ -1,8 +1,6 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Body
-from starlette import status
-from starlette.responses import Response
 
 from app.api.dependencies import SessionDep
 from app.exceptions import DBError, DuplicateDataError, NotFoundError
@@ -12,7 +10,7 @@ from app.services import items as service
 router = APIRouter(prefix="/room", tags=["items"])
 
 
-@router.post("/{room_id}/item/create", response_class=Response)
+@router.post("/{room_id}/item/create", status_code=201)
 async def create_item(
     room_id: str,
     db: SessionDep,
@@ -26,7 +24,7 @@ async def create_item(
         db=db,
     )
     if result.success:
-        return Response(status_code=status.HTTP_201_CREATED)
+        return
     raise DuplicateDataError
 
 
@@ -66,7 +64,7 @@ async def edit_item(
     raise NotFoundError
 
 
-@router.delete("/{room_id}/item/{item_id}", response_class=Response)
+@router.delete("/{room_id}/item/{item_id}", status_code=200)
 async def delete_item(
     room_id: str,
     item_id: int,
@@ -78,5 +76,5 @@ async def delete_item(
         db=db,
     )
     if result.success:
-        return Response(status_code=status.HTTP_200_OK)
+        return
     raise DBError

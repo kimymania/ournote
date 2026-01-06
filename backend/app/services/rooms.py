@@ -17,7 +17,7 @@ from app.crud import (
 )
 from app.dbmodels import Rooms
 from app.exceptions import AuthenticationError
-from app.schemas import ItemsList, Result, RoomPrivate, RoomsList
+from app.schemas import ItemsList, Result, RoomPrivate
 
 
 def generate_room_id() -> Result:
@@ -25,7 +25,7 @@ def generate_room_id() -> Result:
 
     Resulting ID is in Result.data"""
     while True:
-        result = "".join(random.choices(string.ascii_letters + string.digits, k=8))
+        result: str = "".join(random.choices(string.ascii_letters + string.digits, k=8))
         with Session(engine) as session:
             match = session.execute(select(Rooms.id).where(Rooms.id == result)).scalar_one_or_none()
             if match is None:
@@ -33,16 +33,21 @@ def generate_room_id() -> Result:
 
 
 async def create_room(
+    user_id: UUID,
     room_id: str,
     room_pw: str,
     db: Session,
     auth: Authenticator,
 ) -> Result:
-    """Only create room - client will handle room enter immediately after creation"""
+    """Create room and add user - room membership"""
     room = RoomPrivate(id=room_id, password=auth.hash_password(room_pw))
     data = Rooms(**room.model_dump())
-    result = create_db(db, data)
-    return result
+    create_result = create_db(db, data)
+    if not create_result.success:
+        return create_result
+    membership = {"user_id": user_id, "room_id": room.id}
+    insert_result = insert_if_not_exists(db, membership)
+    return insert_result
 
 
 async def join_room(
@@ -54,10 +59,7 @@ async def join_room(
 ) -> Result:
     """Once user enters a room, user stays a member unless they 'leave' the room"""
     room = auth.authenticate_room(db, room_id, room_pw)
-    data = {
-        "user_id": user_id,
-        "room_id": room.id,
-    }
+    data = {"user_id": user_id, "room_id": room.id}
     result = insert_if_not_exists(db, data)
     return result
 
@@ -90,9 +92,9 @@ async def leave_room(
     room_id: str,
     db: Session,
     auth: Authenticator,
-) -> RoomsList:
+) -> Result:
     user = get_user_by_username(db, username)
     if user.id != user_id or not auth.verify_password(password, user.password):
         raise AuthenticationError()
-    rooms = user_leave_room(db, user_id, room_id)
-    return rooms
+    result = user_leave_room(db, user_id, room_id)
+    return result
