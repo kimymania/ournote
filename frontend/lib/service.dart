@@ -142,16 +142,18 @@ class ApiService {
   }
 
   Future<void> createNewRoom(String roomID, String roomPW, String token) async {
-    final roomData = {'room_id': roomID, 'room_pw': roomPW};
-    final headers = {'Authorization': 'Bearer $token'};
     final url = Uri.parse('$baseUrl/room/create');
+    final headers = {'Authorization': 'Bearer $token'};
+    final body = {'room_id': roomID, 'room_pw': roomPW};
 
     try {
-      final response = await http.post(url, headers: headers, body: roomData);
-      if (response.statusCode == 401 || response.statusCode == 403) {
+      final response = await http.post(url, headers: headers, body: body);
+      if (response.statusCode == 201) {
+        return;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
         _redirectToLoginPage();
         throw HttpException('Session timed out');
-      } else if (response.statusCode != 200) {
+      } else {
         throw Exception('Room creation failed');
       }
     } on SocketException {
@@ -185,12 +187,12 @@ class ApiService {
     String password,
     String token,
   ) async {
-    final user = {'username': username, 'password': password};
-    final headers = {'Authorization': 'Bearer $token'};
     final url = Uri.parse('$baseUrl/room/$roomID/$username');
+    final headers = {'Authorization': 'Bearer $token'};
+    final body = {'password': password};
 
     try {
-      final response = await http.delete(url, headers: headers, body: user);
+      final response = await http.delete(url, headers: headers, body: body);
       if (response.statusCode == 200) {
         return 'Success';
       } else if (response.statusCode == 401) {
@@ -199,7 +201,8 @@ class ApiService {
       } else if (response.statusCode == 403) {
         return 'Wrong password';
       } else {
-        throw Exception('Room creation failed');
+        int errorCode = response.statusCode;
+        throw Exception('errorCode=$errorCode, url=$url, headers=$headers, body=$body');
       }
     } on SocketException {
       throw Exception('Connection failure');

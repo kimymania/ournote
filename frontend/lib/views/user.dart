@@ -3,8 +3,6 @@ import 'package:ournote/models.dart';
 import 'package:ournote/service.dart';
 import 'package:ournote/views/room.dart';
 
-final apiService = ApiService();
-
 class UserView extends StatefulWidget {
   final String accessToken;
   final String username;
@@ -15,7 +13,7 @@ class UserView extends StatefulWidget {
 }
 
 class _UserViewState extends State<UserView> {
-  final _roomPWController = TextEditingController();
+  final apiService = ApiService();
   final _userPWController = TextEditingController();
 
   Future<List<Room>> _getRoomsList() async {
@@ -27,196 +25,47 @@ class _UserViewState extends State<UserView> {
     return roomsList;
   }
 
-  Widget _enterRoom(String roomID) {
-    return RoomView(token: widget.accessToken, roomID: roomID);
-  }
-
-  String? newRoomID;
-
-  Future<String> _generateRoomID() async {
-    final String id = await apiService.generateRoomID();
-    setState(() {
-      newRoomID = id;
-    });
-    return id;
-  }
-
-  Future<void> _handleRoomCreation() async {
-    await apiService.createNewRoom(
-      newRoomID!,
-      _roomPWController.text,
-      widget.accessToken,
-    );
-    if (!mounted) return;
-    Navigator.of(context).pop();
-  }
-
   @override
   void dispose() {
-    _roomPWController.dispose();
+    _userPWController.dispose();
     super.dispose();
   }
 
-  Future<void> _createNewRoom(BuildContext context) async {
-    return showDialog(
+  void _showCreateDialog() async {
+    final bool? success = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Create New Room'),
-          content: Column(
-            mainAxisAlignment: .center,
-            spacing: 8,
-            children: [
-              Row(
-                mainAxisAlignment: .center,
-                spacing: 20,
-                children: [
-                  Container(
-                    height: 40,
-                    width: 80,
-                    alignment: .centerRight,
-                    child: Text('Room ID:', textAlign: .center),
-                  ),
-                  Container(
-                    height: 40,
-                    width: 100,
-                    alignment: .centerLeft,
-                    child: FutureBuilder<String>(
-                      future: _generateRoomID(),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData) {
-                          return Text(
-                            snapshot.data!,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: .bold,
-                              color: Colors.red,
-                            ),
-                          );
-                        } else {
-                          return Text('Generating...', textAlign: .center);
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: .center,
-                spacing: 20,
-                children: [
-                  Container(
-                    height: 40,
-                    width: 80,
-                    alignment: .centerRight,
-                    child: Text('PIN:', textAlign: .center),
-                  ),
-                  Container(
-                    height: 40,
-                    width: 100,
-                    alignment: .centerLeft,
-                    child: TextFormField(
-                      validator: (String? value) {
-                        return value!.isEmpty ? "Enter a PIN number" : null;
-                      },
-                      controller: _roomPWController,
-                      decoration: InputDecoration.collapsed(
-                        hintText: '4-digit PIN',
-                        hintMaxLines: 1,
-                        border: .none,
-                      ),
-                      obscureText: true,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              child: const Text('OK', textAlign: .end),
-              onPressed: () => _handleRoomCreation(),
-            ),
-            TextButton(
-              child: const Text('Cancel', textAlign: .end),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-          constraints: .tightFor(height: 270, width: 400),
-        );
-      },
-    ).then((value) {
-      if (!mounted) return;
-      setState(() {});
-    });
-  }
-
-  Future<void> _handleLeaveRoom(Room room) async {
-    await apiService.leaveRoom(
-      room.id,
-      widget.username,
-      _userPWController.text,
-      widget.accessToken,
+      builder: (_) =>
+          CreateRoomDialog(apiService: apiService, accessToken: widget.accessToken),
     );
-    if (!mounted) return;
-    Navigator.of(context).pop();
+
+    if (success == true) {
+      setState(() {});
+    }
   }
 
-  Future<void> _leaveRoomDialog(BuildContext context, Room roomKey) async {
-    return showDialog(
+  Future<bool> _showLeaveDialog(Room room) async {
+    final bool? success = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Leave room?'),
-          content: Container(
-            height: 40,
-            width: 100,
-            alignment: .center,
-            child: TextFormField(
-              validator: (String? value) {
-                return value!.isEmpty ? "Enter password" : null;
-              },
-              controller: _roomPWController,
-              decoration: InputDecoration.collapsed(
-                hintText: 'Password',
-                hintMaxLines: 1,
-                border: .none,
-              ),
-              obscureText: true,
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: const Text('OK', textAlign: .end),
-              onPressed: () => _handleLeaveRoom(roomKey),
-            ),
-            TextButton(
-              child: const Text('Cancel', textAlign: .end),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-          constraints: .tightFor(height: 270, width: 400),
-        );
-      },
-    ).then((value) {
-      if (!mounted) return;
-      setState(() {});
-    });
+      builder: (_) => LeaveRoomDialog(
+        apiService: apiService,
+        room: room,
+        username: widget.username,
+        accessToken: widget.accessToken,
+      ),
+    );
+    return success ?? false;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Dashboard', style: TextStyle(fontWeight: .bold)),
+        title: const Text('Dashboard', style: TextStyle(fontWeight: .bold)),
         centerTitle: false,
         actions: [
-          IconButton(
-            onPressed: () => _createNewRoom(context),
-            icon: const Icon(Icons.add),
-          ),
+          IconButton(onPressed: () => _showCreateDialog(), icon: const Icon(Icons.add)),
         ],
       ),
       body: Padding(
@@ -240,23 +89,54 @@ class _UserViewState extends State<UserView> {
                         key: roomKey,
                         background: Container(
                           color: Colors.red,
-                          child: Icon(Icons.remove_circle, color: Colors.white),
+                          alignment: .centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          child: const Icon(Icons.remove_circle, color: Colors.white),
                         ),
-                        onDismissed: (direction) =>
-                            _leaveRoomDialog(context, roomKey.value),
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => _enterRoom(roomID)),
-                            );
-                          },
-                          child: Text(
-                            roomID,
-                            style: TextStyle(
-                              color: Color(0xFF1C1C1C),
-                              fontSize: 20,
-                              fontWeight: .bold,
+                        direction: .endToStart,
+                        confirmDismiss: (direction) async {
+                          return await _showLeaveDialog(roomKey.value);
+                        },
+                        onDismissed: (direction) {
+                          setState(() => snapshot.data!.removeAt(index));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Left room ${roomKey.value.id}')),
+                          );
+                        },
+                        child: Card(
+                          clipBehavior: .hardEdge,
+                          child: InkWell(
+                            splashColor: Colors.green.withAlpha(30),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) {
+                                    return RoomView(
+                                      token: widget.accessToken,
+                                      roomID: roomID,
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                            child: SizedBox(
+                              height: 50,
+                              width: double.infinity,
+                              child: Center(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      roomID,
+                                      style: const TextStyle(
+                                        color: Color(0xFF1C1C1C),
+                                        fontSize: 20,
+                                        fontWeight: .bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -266,13 +146,215 @@ class _UserViewState extends State<UserView> {
                     shrinkWrap: true,
                   );
                 } else {
-                  return Center(child: Text("Loading..."));
+                  return const SizedBox(
+                    width: 15,
+                    height: 15,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  );
                 }
               },
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class CreateRoomDialog extends StatefulWidget {
+  final ApiService apiService;
+  final String accessToken;
+
+  const CreateRoomDialog({
+    super.key,
+    required this.apiService,
+    required this.accessToken,
+  });
+
+  @override
+  State<CreateRoomDialog> createState() => _CreateRoomDialogState();
+}
+
+class _CreateRoomDialogState extends State<CreateRoomDialog> {
+  final _passwordController = TextEditingController();
+  late Future<String> roomIdFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    roomIdFuture = widget.apiService.generateRoomID();
+  }
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final roomId = await roomIdFuture;
+    if (!mounted) return;
+    try {
+      await widget.apiService.createNewRoom(
+        roomId,
+        _passwordController.text,
+        widget.accessToken,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Error! Failed to create room")));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create New Room'),
+      content: SizedBox(
+        height: 100,
+        width: 300,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: .spaceBetween,
+              spacing: 20,
+              children: [
+                const Text('Room ID:', textAlign: .center),
+                FutureBuilder<String>(
+                  future: roomIdFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return Text(
+                        snapshot.data!,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: .bold,
+                          color: Colors.red,
+                        ),
+                      );
+                    }
+                    return const SizedBox(
+                      width: 15,
+                      height: 15,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: .spaceBetween,
+              children: [
+                const Text("PIN:"),
+                SizedBox(
+                  width: 100,
+                  child: TextFormField(
+                    validator: (String? value) {
+                      return value!.isEmpty ? "Enter a PIN number" : null;
+                    },
+                    controller: _passwordController,
+                    decoration: const InputDecoration(
+                      hintText: '4-digit PIN',
+                      hintMaxLines: 1,
+                      border: .none,
+                      isDense: true,
+                    ),
+                    obscureText: true,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(child: const Text('OK'), onPressed: () => _submit()),
+        TextButton(
+          child: const Text('Cancel'),
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+      ],
+    );
+  }
+}
+
+class LeaveRoomDialog extends StatefulWidget {
+  final ApiService apiService;
+  final Room room;
+  final String username;
+  final String accessToken;
+
+  const LeaveRoomDialog({
+    super.key,
+    required this.apiService,
+    required this.room,
+    required this.username,
+    required this.accessToken,
+  });
+
+  @override
+  State<LeaveRoomDialog> createState() => _LeaveRoomDialogState();
+}
+
+class _LeaveRoomDialogState extends State<LeaveRoomDialog> {
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    try {
+      await widget.apiService.leaveRoom(
+        widget.room.id,
+        widget.username,
+        _passwordController.text,
+        widget.accessToken,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Error! Failed to leave room")));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Leave room?'),
+      content: SizedBox(
+        height: 100,
+        width: 300,
+        child: TextFormField(
+          validator: (String? value) {
+            return value!.isEmpty ? "Enter password" : null;
+          },
+          controller: _passwordController,
+          decoration: const InputDecoration(
+            labelText: 'Enter password',
+            border: .none,
+            isDense: true,
+          ),
+          obscureText: true,
+        ),
+      ),
+      actions: [
+        TextButton(child: const Text('OK'), onPressed: () => _submit()),
+        TextButton(
+          child: const Text('Cancel'),
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+      ],
     );
   }
 }

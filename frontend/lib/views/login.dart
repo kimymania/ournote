@@ -3,8 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:ournote/service.dart';
 import 'package:ournote/views/user.dart';
 
-final apiService = ApiService();
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -13,6 +11,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final apiService = ApiService();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
