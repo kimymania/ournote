@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app import crud
 from app.core.config import settings
-from app.exceptions import AuthenticationError, NotFoundError
+from app.exceptions import AuthenticationError, AuthorizationError, NotFoundError
 from app.schemas import RoomPrivate, User, UserPrivate
 
 
@@ -54,12 +54,12 @@ class Authenticator:
             raise AuthenticationError from e
         return user
 
-    def authenticate_room(self, db: Session, room_id: str, room_pw: str) -> RoomPrivate:
+    def auth_room(self, db: Session, room_id: str, room_pw: str) -> RoomPrivate:
         try:
             room = crud.get_room(db, room_id)
             self.verify_password(room_pw, room.password)
         except (NotFoundError, AuthenticationError) as e:
-            raise AuthenticationError from e
+            raise AuthorizationError from e
         return room
 
 

@@ -58,7 +58,7 @@ async def join_room(
     auth: Authenticator,
 ) -> Result:
     """Once user enters a room, user stays a member unless they 'leave' the room"""
-    room = auth.authenticate_room(db, room_id, room_pw)
+    room = auth.auth_room(db, room_id, room_pw)
     data = {"user_id": user_id, "room_id": room.id}
     result = insert_if_not_exists(db, data)
     return result
@@ -80,7 +80,7 @@ async def delete_room(
     db: Session,
     auth: Authenticator,
 ) -> Result:
-    room = auth.authenticate_room(db, room_id, room_pw)
+    room = auth.auth_room(db, room_id, room_pw)
     result = delete_db(db, room.id)
     return result
 

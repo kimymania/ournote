@@ -2,8 +2,6 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form
-from starlette import status
-from starlette.responses import Response
 
 from app.api.dependencies import AuthDep, SessionDep
 from app.constants import PWStringMetadata, RoomIDMetadata, RoomPINMetadata
@@ -38,7 +36,7 @@ async def create_room(
         raise DBError
 
 
-@router.post("/{room_id}", response_class=Response)
+@router.post("/{room_id}", status_code=200)
 async def join_room(
     user_id: Annotated[UUID, Depends(get_current_user)],
     room_id: str,
@@ -54,7 +52,7 @@ async def join_room(
         auth=auth,
     )
     if result.success:
-        return Response(status_code=status.HTTP_200_OK)
+        return
     if result.status_code == 500:
         raise DBError
 
@@ -69,7 +67,7 @@ async def get_room_contents(
     return result
 
 
-@router.delete("/{room_id}", response_class=Response)
+@router.delete("/{room_id}", status_code=200)
 async def delete_room(
     _: Annotated[UUID, Depends(get_current_user)],
     room_id: str,
@@ -84,14 +82,11 @@ async def delete_room(
         auth=auth,
     )
     if result.success:
-        return Response(status_code=status.HTTP_200_OK)
+        return
     raise DBError
 
 
-@router.delete(
-    "/{room_id}/{username}",
-    response_class=Response,
-)
+@router.delete("/{room_id}/{username}", status_code=200)
 async def leave_room(
     user_id: Annotated[UUID, Depends(get_current_user)],
     username: str,
@@ -109,5 +104,5 @@ async def leave_room(
         auth=auth,
     )
     if result.success:
-        return Response(status_code=status.HTTP_200_OK)
+        return
     raise DBError
