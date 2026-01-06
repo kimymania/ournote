@@ -6,7 +6,7 @@ import 'package:ournote/views/item.dart';
 final apiService = ApiService();
 
 class RoomView extends StatefulWidget {
-  final String token;
+  final Token token;
   final String roomID;
   const RoomView({super.key, required this.token, required this.roomID});
 
@@ -56,6 +56,19 @@ class _RoomViewState extends State<RoomView> {
     });
   }
 
+  Future<bool> _showDeleteDialog() async {
+    final bool? success = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => DeleteRoomDialog(
+        apiService: apiService,
+        roomID: widget.roomID,
+        token: widget.token,
+      ),
+    );
+    return success ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,6 +76,20 @@ class _RoomViewState extends State<RoomView> {
         title: Text(widget.roomID, style: TextStyle(fontWeight: .bold)),
         centerTitle: false,
         actions: [
+          IconButton(
+            onPressed: () async {
+              bool result = await _showDeleteDialog();
+              if (result) {
+                if (context.mounted) {
+                  Navigator.of(context).pop(true);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Deleted room ${widget.roomID}')),
+                  );
+                }
+              }
+            },
+            icon: const Icon(Icons.delete),
+          ),
           IconButton(onPressed: () => _addNewItem(), icon: const Icon(Icons.add)),
         ],
         actionsPadding: const EdgeInsets.symmetric(horizontal: 8),
@@ -119,6 +146,75 @@ class _RoomViewState extends State<RoomView> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class DeleteRoomDialog extends StatefulWidget {
+  final ApiService apiService;
+  final String roomID;
+  final Token token;
+  const DeleteRoomDialog({
+    super.key,
+    required this.apiService,
+    required this.roomID,
+    required this.token,
+  });
+
+  @override
+  State<DeleteRoomDialog> createState() => _DeleteRoomDialog();
+}
+
+class _DeleteRoomDialog extends State<DeleteRoomDialog> {
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    Room room = Room(id: widget.roomID, password: _passwordController.text);
+    try {
+      await widget.apiService.deleteRoom(room, widget.token);
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error! Failed to delete room: ${e.toString()}")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Delete room?'),
+      content: SizedBox(
+        height: 80,
+        width: 300,
+        child: TextFormField(
+          validator: (String? value) {
+            return value!.isEmpty ? "Enter 4-digit PIN" : null;
+          },
+          controller: _passwordController,
+          decoration: const InputDecoration(
+            labelText: 'Enter Room PIN',
+            border: .none,
+            isDense: true,
+          ),
+          obscureText: true,
+        ),
+      ),
+      actions: [
+        TextButton(child: const Text('OK'), onPressed: () => _submit()),
+        TextButton(
+          child: const Text('Cancel'),
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+      ],
     );
   }
 }

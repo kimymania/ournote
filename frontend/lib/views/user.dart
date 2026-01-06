@@ -4,9 +4,9 @@ import 'package:ournote/service.dart';
 import 'package:ournote/views/room.dart';
 
 class UserView extends StatefulWidget {
-  final String accessToken;
+  final Token token;
   final String username;
-  const UserView({super.key, required this.accessToken, required this.username});
+  const UserView({super.key, required this.token, required this.username});
 
   @override
   State<UserView> createState() => _UserViewState();
@@ -14,29 +14,30 @@ class UserView extends StatefulWidget {
 
 class _UserViewState extends State<UserView> {
   final apiService = ApiService();
-  final _userPWController = TextEditingController();
 
   Future<List<Room>> _getRoomsList() async {
-    final RoomsList result = await apiService.fetchRoomsList(
-      widget.username,
-      widget.accessToken,
-    );
-    final List<Room> roomsList = result.list;
-    return roomsList;
+    return await apiService.fetchRoomsList(widget.username, widget.token);
   }
 
-  @override
-  void dispose() {
-    _userPWController.dispose();
-    super.dispose();
+  // if room is deleted in room view, delete = true
+  // this will trigger setState(() {}) for redraw
+  Future<bool?> _handleRoomView(String roomID) async {
+    bool? delete = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) {
+          return RoomView(token: widget.token, roomID: roomID);
+        },
+      ),
+    );
+    return delete ?? false;
   }
 
   void _showCreateDialog() async {
     final bool? success = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) =>
-          CreateRoomDialog(apiService: apiService, accessToken: widget.accessToken),
+      builder: (_) => CreateRoomDialog(apiService: apiService, token: widget.token),
     );
 
     if (success == true) {
@@ -52,7 +53,7 @@ class _UserViewState extends State<UserView> {
         apiService: apiService,
         room: room,
         username: widget.username,
-        accessToken: widget.accessToken,
+        token: widget.token,
       ),
     );
     return success ?? false;
@@ -79,6 +80,30 @@ class _UserViewState extends State<UserView> {
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(child: Text("$snapshot.error"));
+                } else if (snapshot.hasData && snapshot.data!.isEmpty) {
+                  return Card(
+                    clipBehavior: .hardEdge,
+                    child: InkWell(
+                      splashColor: Colors.green.withAlpha(30),
+                      onTap: () => _showCreateDialog(),
+                      child: SizedBox(
+                        height: 80,
+                        width: double.infinity,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: .center,
+                            children: [
+                              const Icon(Icons.add),
+                              const Text(
+                                "Create a new room",
+                                style: TextStyle(color: Colors.grey, fontStyle: .italic),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
                 } else if (snapshot.hasData) {
                   return ListView.builder(
                     itemCount: snapshot.data!.length,
@@ -107,24 +132,19 @@ class _UserViewState extends State<UserView> {
                           clipBehavior: .hardEdge,
                           child: InkWell(
                             splashColor: Colors.green.withAlpha(30),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) {
-                                    return RoomView(
-                                      token: widget.accessToken,
-                                      roomID: roomID,
-                                    );
-                                  },
-                                ),
-                              );
+                            onTap: () async {
+                              await _handleRoomView(roomID).then((value) {
+                                if (value!) {
+                                  setState(() {});
+                                }
+                              });
                             },
                             child: SizedBox(
                               height: 50,
                               width: double.infinity,
                               child: Center(
                                 child: Column(
+                                  mainAxisAlignment: .center,
                                   children: [
                                     Text(
                                       roomID,
@@ -163,13 +183,9 @@ class _UserViewState extends State<UserView> {
 
 class CreateRoomDialog extends StatefulWidget {
   final ApiService apiService;
-  final String accessToken;
+  final Token token;
 
-  const CreateRoomDialog({
-    super.key,
-    required this.apiService,
-    required this.accessToken,
-  });
+  const CreateRoomDialog({super.key, required this.apiService, required this.token});
 
   @override
   State<CreateRoomDialog> createState() => _CreateRoomDialogState();
@@ -198,7 +214,7 @@ class _CreateRoomDialogState extends State<CreateRoomDialog> {
       await widget.apiService.createNewRoom(
         roomId,
         _passwordController.text,
-        widget.accessToken,
+        widget.token,
       );
       if (!mounted) return;
       Navigator.of(context).pop(true);
@@ -287,14 +303,14 @@ class LeaveRoomDialog extends StatefulWidget {
   final ApiService apiService;
   final Room room;
   final String username;
-  final String accessToken;
+  final Token token;
 
   const LeaveRoomDialog({
     super.key,
     required this.apiService,
     required this.room,
     required this.username,
-    required this.accessToken,
+    required this.token,
   });
 
   @override
@@ -316,7 +332,7 @@ class _LeaveRoomDialogState extends State<LeaveRoomDialog> {
         widget.room.id,
         widget.username,
         _passwordController.text,
-        widget.accessToken,
+        widget.token,
       );
       if (!mounted) return;
       Navigator.of(context).pop(true);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:ournote/service.dart';
 import 'package:ournote/views/user.dart';
+import 'package:ournote/models.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -15,7 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String? token;
+  Token? token;
   bool _isLoading = false;
 
   void _handleLogin() async {
@@ -47,7 +48,7 @@ class _LoginPageState extends State<LoginPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => UserView(accessToken: token!, username: username),
+          builder: (context) => UserView(token: token!, username: username),
         ),
       );
     } else {
@@ -75,7 +76,7 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisAlignment: .center,
             crossAxisAlignment: .center,
             children: [
-              Text(
+              const Text(
                 'Welcome',
                 style: TextStyle(
                   fontFamily: 'Poppins',
@@ -84,8 +85,8 @@ class _LoginPageState extends State<LoginPage> {
                   color: Color(0xFF1C1C1C),
                 ),
               ),
-              SizedBox(height: 6),
-              Text(
+              const SizedBox(height: 6),
+              const Text(
                 'Sign In to continue',
                 style: TextStyle(
                   fontFamily: 'Poppins',
@@ -94,7 +95,7 @@ class _LoginPageState extends State<LoginPage> {
                   color: Color(0xFF1C1C1C),
                 ),
               ),
-              SizedBox(height: 26),
+              const SizedBox(height: 26),
               Form(
                 key: _formKey,
                 child: Column(
@@ -109,7 +110,7 @@ class _LoginPageState extends State<LoginPage> {
                         border: OutlineInputBorder(),
                       ),
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     TextFormField(
                       validator: (String? value) {
                         return value!.isEmpty ? "Enter a password" : null;
@@ -121,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       obscureText: true,
                     ),
-                    SizedBox(height: 26),
+                    const SizedBox(height: 26),
                     SizedBox(
                       width: double.infinity,
                       height: 49,
@@ -155,16 +156,16 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
               ),
-              SizedBox(height: 26),
-              Center(
+              const SizedBox(height: 26),
+              const Center(
                 child: Text(
                   'Forgot Password?',
                   textAlign: .center,
                   style: TextStyle(fontSize: 14, color: Color(0xFF87879D)),
                 ),
               ),
-              SizedBox(height: 10),
-              Center(
+              const SizedBox(height: 10),
+              const Center(
                 child: Text(
                   "Don't have an account? Sign Up",
                   textAlign: .center,

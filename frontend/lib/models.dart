@@ -1,7 +1,18 @@
+class Token {
+  const Token({required this.tokenString});
+  final String tokenString;
+
+  static Map<String, String> getHeader(Token token) {
+    String tokenString = token.tokenString;
+    return {'Authorization': 'Bearer $tokenString'};
+  }
+}
+
 class Room {
   final String id;
+  final String? password;
 
-  const Room({required this.id});
+  const Room({required this.id, this.password});
 }
 
 class RoomsList {
@@ -11,6 +22,9 @@ class RoomsList {
 
   factory RoomsList.fromJson(Map<String, dynamic> json) {
     List<Room> roomsList = [];
+    if (json['rooms'] == null) {
+      return RoomsList(list: roomsList);
+    }
     for (Map<String, dynamic> data in json['rooms']) {
       Room room = Room(id: data['id']!);
       roomsList.add(room);
