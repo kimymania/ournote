@@ -10,3 +10,8 @@ router.include_router(auth)
 router.include_router(user)
 router.include_router(rooms)
 router.include_router(items)
+
+
+@router.get("/health", tags=["monitor"])
+async def health_check():
+    return {"status": "healthy"}
