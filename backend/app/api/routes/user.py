@@ -13,7 +13,7 @@ from app.services import user as service
 router = APIRouter(prefix="/user", tags=["user"])
 
 
-@router.post("/signup", status_code=201)
+@router.post("/create", status_code=201)
 async def create_user(
     username: Annotated[str, Form(...), UsernameStringMetadata],
     password: Annotated[str, Form(...), PWStringMetadata],
