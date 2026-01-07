@@ -4,7 +4,7 @@ class Token {
 
   static Map<String, String> getHeader(Token token) {
     String tokenString = token.tokenString;
-    return {'Authorization': 'Bearer $tokenString'};
+    return {"Authorization": "Bearer $tokenString"};
   }
 }
 
@@ -22,11 +22,11 @@ class RoomsList {
 
   factory RoomsList.fromJson(Map<String, dynamic> json) {
     List<Room> roomsList = [];
-    if (json['rooms'] == null) {
+    if (json["rooms"] == null) {
       return RoomsList(list: roomsList);
     }
-    for (Map<String, dynamic> data in json['rooms']) {
-      Room room = Room(id: data['id']!);
+    for (Map<String, dynamic> data in json["rooms"]) {
+      Room room = Room(id: data["id"]!);
       roomsList.add(room);
     }
     return RoomsList(list: roomsList);
@@ -42,9 +42,9 @@ class Item {
 
   factory Item.fromJson(Map<String, dynamic> json) {
     return Item(
-      id: json['id'] as int,
-      title: json['title'] as String,
-      content: json['content'] as String,
+      id: json["id"] as int,
+      title: json["title"] as String,
+      content: json["content"] as String,
     );
   }
 }
@@ -55,13 +55,13 @@ class ItemsList {
   const ItemsList({required this.list});
 
   factory ItemsList.fromJson(Map<String, dynamic> json) {
-    if (json['items'] == null) {
+    if (json["items"] == null) {
       return ItemsList(list: []);
     }
 
     List<Item> itemsList = [];
-    for (Map<String, dynamic> data in json['items']) {
-      Item item = Item(id: data['id'], title: data['title'], content: data['content']);
+    for (Map<String, dynamic> data in json["items"]) {
+      Item item = Item(id: data["id"], title: data["title"], content: data["content"]);
       itemsList.add(item);
     }
     return ItemsList(list: itemsList);

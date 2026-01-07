@@ -6,9 +6,10 @@ import 'package:ournote/globals.dart';
 import 'package:ournote/models.dart';
 import 'package:ournote/views/login.dart';
 
-void _redirectToLoginPage() {
-  navigatorKey.currentState?.pushReplacement(
+void redirectToLoginPage() {
+  navigatorKey.currentState?.pushAndRemoveUntil(
     MaterialPageRoute(builder: (context) => LoginPage()),
+    (route) => false,
   );
 }
 
@@ -16,62 +17,78 @@ class ApiService {
   final String baseUrl = "http://127.0.0.1:8000";
 
   Future<Token?> getToken(String username, String password) async {
-    final url = Uri.parse('$baseUrl/token');
-    final body = {'username': username, 'password': password};
+    final url = Uri.parse("$baseUrl/token");
+    final body = {"username": username, "password": password};
 
     try {
       final response = await http.post(url, body: body);
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
-        Token token = Token(tokenString: jsonResponse['access_token']);
+        Token token = Token(tokenString: jsonResponse["access_token"]);
         return token;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
-        _redirectToLoginPage();
-        throw HttpException('Session timed out');
+        redirectToLoginPage();
+        throw HttpException("Session timed out");
       } else {
-        throw Exception('Authentication failed');
+        throw Exception("Authentication failed");
       }
     } on SocketException {
-      throw Exception('Connection failure');
+      throw Exception("Connection failure");
+    }
+  }
+
+  Future<void> createUser(String username, String password) async {
+    final url = Uri.parse("$baseUrl/user/create");
+    final body = {"username": username, "password": password};
+
+    try {
+      final response = await http.post(url, body: body);
+      if (response.statusCode == 201) {
+        return;
+      } else {
+        throw HttpException("Failed to create user");
+      }
+    } on SocketException {
+      throw Exception("Connection failure");
     }
   }
 
   Future<String> generateRoomID() async {
-    final url = Uri.parse('$baseUrl/room_id');
+    final url = Uri.parse("$baseUrl/room_id");
 
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
-        return jsonResponse['id'];
+        return jsonResponse["id"];
       } else {
-        throw HttpException('Failed to load data');
+        throw HttpException("Failed to load data");
       }
     } on SocketException {
-      throw Exception('Connection failure');
+      throw Exception("Connection failure");
     }
   }
 
   Future<void> createNewItem(String roomID, String title, String content) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/room/$roomID/item/create'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'title': title, 'content': content}),
+        Uri.parse("$baseUrl/room/$roomID/item/create"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"title": title, "content": content}),
       );
 
       if (response.statusCode == 401 || response.statusCode == 403) {
-        _redirectToLoginPage();
+        redirectToLoginPage();
       } else if (response.statusCode != 200) {
-        throw HttpException('Failed to update data');
+        throw HttpException("Failed to update data");
       }
     } on SocketException {
-      throw Exception('Connection failure');
+      throw Exception("Connection failure");
     }
   }
 
   Future<dynamic> fetchItem(String roomID, int itemID, Token token) async {
-    final url = Uri.parse('$baseUrl/room/$roomID/item/$itemID');
+    final url = Uri.parse("$baseUrl/room/$roomID/item/$itemID");
     final headers = Token.getHeader(token);
 
     try {
@@ -80,50 +97,50 @@ class ApiService {
         final Item item = Item.fromJson(jsonDecode(response.body));
         return item;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
-        _redirectToLoginPage();
-        throw HttpException('Session timed out');
+        redirectToLoginPage();
+        throw HttpException("Session timed out");
       } else {
-        throw HttpException('Failed to load data');
+        throw HttpException("Failed to load data");
       }
     } on SocketException {
-      throw Exception('Connection failure');
+      throw Exception("Connection failure");
     }
   }
 
   Future<void> updateItem(String roomID, int itemID, String title, String content) async {
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/room/$roomID/item/$itemID'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'title': title, 'content': content}),
+        Uri.parse("$baseUrl/room/$roomID/item/$itemID"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"title": title, "content": content}),
       );
 
       if (response.statusCode == 401 || response.statusCode == 403) {
-        _redirectToLoginPage();
+        redirectToLoginPage();
       } else if (response.statusCode != 200) {
-        throw HttpException('Failed to update data');
+        throw HttpException("Failed to update data");
       }
     } on SocketException {
-      throw Exception('Connection failure');
+      throw Exception("Connection failure");
     }
   }
 
   Future<void> deleteItem(String roomID, int itemID) async {
     try {
-      final response = await http.delete(Uri.parse('$baseUrl/room/$roomID/item/$itemID'));
+      final response = await http.delete(Uri.parse("$baseUrl/room/$roomID/item/$itemID"));
 
       if (response.statusCode == 200) {
         return;
       } else {
-        throw HttpException('Failed to delete data');
+        throw HttpException("Failed to delete data");
       }
     } on SocketException {
-      throw Exception('Connection failure');
+      throw Exception("Connection failure");
     }
   }
 
   Future<List<Room>> fetchRoomsList(String username, Token token) async {
-    final url = Uri.parse('$baseUrl/user/$username');
+    final url = Uri.parse("$baseUrl/user/$username");
     final headers = Token.getHeader(token);
 
     try {
@@ -133,38 +150,38 @@ class ApiService {
         final List<Room> parsedList = roomsList.list;
         return parsedList;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
-        _redirectToLoginPage();
-        throw HttpException('Session timed out');
+        redirectToLoginPage();
+        throw HttpException("Session timed out");
       } else {
-        throw HttpException('Failed to load data');
+        throw HttpException("Failed to load data");
       }
     } on SocketException {
-      throw Exception('Connection failure');
+      throw Exception("Connection failure");
     }
   }
 
   Future<void> createNewRoom(String roomID, String roomPW, Token token) async {
-    final url = Uri.parse('$baseUrl/room/create');
+    final url = Uri.parse("$baseUrl/room/create");
     final headers = Token.getHeader(token);
-    final body = {'room_id': roomID, 'room_pw': roomPW};
+    final body = {"room_id": roomID, "room_pw": roomPW};
 
     try {
       final response = await http.post(url, headers: headers, body: body);
       if (response.statusCode == 201) {
         return;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
-        _redirectToLoginPage();
-        throw HttpException('Session timed out');
+        redirectToLoginPage();
+        throw HttpException("Session timed out");
       } else {
-        throw Exception('Room creation failed');
+        throw Exception("Room creation failed");
       }
     } on SocketException {
-      throw Exception('Connection failure');
+      throw Exception("Connection failure");
     }
   }
 
   Future<ItemsList> fetchItemsList(String roomID, Token token) async {
-    final url = Uri.parse('$baseUrl/room/$roomID');
+    final url = Uri.parse("$baseUrl/room/$roomID");
     final headers = Token.getHeader(token);
 
     try {
@@ -173,19 +190,19 @@ class ApiService {
         final ItemsList itemsList = ItemsList.fromJson(jsonDecode(response.body));
         return itemsList;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
-        _redirectToLoginPage();
-        throw HttpException('Session timed out');
+        redirectToLoginPage();
+        throw HttpException("Session timed out");
       } else {
-        throw HttpException('Failed to load data');
+        throw HttpException("Failed to load data");
       }
     } on SocketException {
-      throw Exception('Connection failure');
+      throw Exception("Connection failure");
     }
   }
 
   Future<void> deleteRoom(Room room, Token token) async {
     final roomID = room.id;
-    final url = Uri.parse('$baseUrl/room/$roomID');
+    final url = Uri.parse("$baseUrl/room/$roomID");
     final headers = Token.getHeader(token);
     final body = {"room_pw": room.password};
 
@@ -194,16 +211,16 @@ class ApiService {
       if (response.statusCode == 200) {
         return;
       } else if (response.statusCode == 401) {
-        _redirectToLoginPage();
-        throw HttpException('Session timed out');
+        redirectToLoginPage();
+        throw HttpException("Session timed out");
       } else if (response.statusCode == 403) {
-        throw Exception('wrong pin number');
+        throw Exception("wrong pin number");
       } else {
         int errorCode = response.statusCode;
-        throw Exception('errorCode=$errorCode, url=$url, headers=$headers, body=$body');
+        throw Exception("errorCode=$errorCode, url=$url, headers=$headers, body=$body");
       }
     } on SocketException {
-      throw Exception('Connection failure');
+      throw Exception("Connection failure");
     }
   }
 
@@ -213,25 +230,25 @@ class ApiService {
     String password,
     Token token,
   ) async {
-    final url = Uri.parse('$baseUrl/room/$roomID/$username');
+    final url = Uri.parse("$baseUrl/room/$roomID/$username");
     final headers = Token.getHeader(token);
-    final body = {'password': password};
+    final body = {"password": password};
 
     try {
       final response = await http.delete(url, headers: headers, body: body);
       if (response.statusCode == 200) {
         return;
       } else if (response.statusCode == 401) {
-        _redirectToLoginPage();
-        throw HttpException('Session timed out');
+        redirectToLoginPage();
+        throw HttpException("Session timed out");
       } else if (response.statusCode == 403) {
-        throw Exception('wrong password');
+        throw Exception("wrong password");
       } else {
         int errorCode = response.statusCode;
-        throw Exception('errorCode=$errorCode, url=$url, headers=$headers, body=$body');
+        throw Exception("errorCode=$errorCode, url=$url, headers=$headers, body=$body");
       }
     } on SocketException {
-      throw Exception('Connection failure');
+      throw Exception("Connection failure");
     }
   }
 }

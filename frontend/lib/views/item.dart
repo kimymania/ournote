@@ -59,7 +59,7 @@ class _ItemViewState extends State<ItemView> {
                 controller: _titleController,
                 style: TextStyle(fontSize: 22, fontWeight: .bold),
                 decoration: InputDecoration(
-                  hintText: 'Title',
+                  hintText: "Title",
                   hintMaxLines: 1,
                   border: .none,
                 ),

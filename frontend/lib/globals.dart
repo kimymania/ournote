@@ -1,3 +1,5 @@
 import 'package:flutter/material.dart';
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final navigatorKey = GlobalKey<NavigatorState>();
+final roomScaffoldKey = GlobalKey<ScaffoldState>();
+final userScaffoldKey = GlobalKey<ScaffoldState>();

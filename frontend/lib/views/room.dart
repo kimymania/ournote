@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ournote/globals.dart';
 import 'package:ournote/models.dart';
 import 'package:ournote/service.dart';
 import 'package:ournote/views/item.dart';
@@ -48,7 +49,7 @@ class _RoomViewState extends State<RoomView> {
       context,
       MaterialPageRoute(
         builder: (context) =>
-            ItemView(roomID: widget.roomID, title: 'New Item', content: ''),
+            ItemView(roomID: widget.roomID, title: "New Item", content: ""),
       ),
     ).then((value) {
       if (!mounted) return;
@@ -72,27 +73,48 @@ class _RoomViewState extends State<RoomView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: roomScaffoldKey,
       appBar: AppBar(
         title: Text(widget.roomID, style: TextStyle(fontWeight: .bold)),
         centerTitle: false,
         actions: [
+          IconButton(onPressed: () => _addNewItem(), icon: const Icon(Icons.create)),
           IconButton(
-            onPressed: () async {
-              bool result = await _showDeleteDialog();
-              if (result) {
-                if (context.mounted) {
-                  Navigator.of(context).pop(true);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Deleted room ${widget.roomID}')),
-                  );
-                }
-              }
+            onPressed: () {
+              roomScaffoldKey.currentState?.openEndDrawer();
             },
-            icon: const Icon(Icons.delete),
+            icon: const Icon(Icons.menu),
           ),
-          IconButton(onPressed: () => _addNewItem(), icon: const Icon(Icons.add)),
         ],
         actionsPadding: const EdgeInsets.symmetric(horizontal: 8),
+      ),
+      endDrawer: Drawer(
+        width: 200,
+        child: ListView(
+          children: [
+            DrawerHeader(child: const Text("Settings")),
+            ListTile(
+              leading: const Icon(Icons.mail),
+              title: const Text("Invite member"),
+              // TODO: onTap functionality to generate & send invitation code
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete),
+              title: const Text("Delete room", style: TextStyle(color: Colors.red)),
+              onTap: () async {
+                bool result = await _showDeleteDialog();
+                if (result) {
+                  if (context.mounted) {
+                    Navigator.of(context).pop(true);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Deleted room ${widget.roomID}")),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -191,7 +213,7 @@ class _DeleteRoomDialog extends State<DeleteRoomDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Delete room?'),
+      title: const Text("Delete room?"),
       content: SizedBox(
         height: 80,
         width: 300,
@@ -201,7 +223,7 @@ class _DeleteRoomDialog extends State<DeleteRoomDialog> {
           },
           controller: _passwordController,
           decoration: const InputDecoration(
-            labelText: 'Enter Room PIN',
+            labelText: "Enter Room PIN",
             border: .none,
             isDense: true,
           ),
@@ -209,9 +231,9 @@ class _DeleteRoomDialog extends State<DeleteRoomDialog> {
         ),
       ),
       actions: [
-        TextButton(child: const Text('OK'), onPressed: () => _submit()),
+        TextButton(child: const Text("OK"), onPressed: () => _submit()),
         TextButton(
-          child: const Text('Cancel'),
+          child: const Text("Cancel"),
           onPressed: () => Navigator.of(context).pop(false),
         ),
       ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ournote/globals.dart';
 import 'package:ournote/models.dart';
 import 'package:ournote/service.dart';
 import 'package:ournote/views/room.dart';
@@ -62,12 +63,39 @@ class _UserViewState extends State<UserView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: userScaffoldKey,
       appBar: AppBar(
-        title: const Text('Dashboard', style: TextStyle(fontWeight: .bold)),
+        title: const Text("Dashboard", style: TextStyle(fontWeight: .bold)),
         centerTitle: false,
         actions: [
           IconButton(onPressed: () => _showCreateDialog(), icon: const Icon(Icons.add)),
+          IconButton(
+            onPressed: () {
+              userScaffoldKey.currentState?.openEndDrawer();
+            },
+            icon: const Icon(Icons.menu),
+          ),
         ],
+      ),
+      endDrawer: Drawer(
+        width: 200,
+        child: ListView(
+          children: [
+            DrawerHeader(child: const Text("Settings")),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text("Log Out"),
+              onTap: () => redirectToLoginPage(),
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete),
+              title: const Text("Delete user", style: TextStyle(color: Colors.red)),
+              onTap: () async {
+                // TODO: Connect to delete user api
+              },
+            ),
+          ],
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -125,7 +153,7 @@ class _UserViewState extends State<UserView> {
                         onDismissed: (direction) {
                           setState(() => snapshot.data!.removeAt(index));
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Left room ${roomKey.value.id}')),
+                            SnackBar(content: Text("Left room ${roomKey.value.id}")),
                           );
                         },
                         child: Card(
@@ -229,7 +257,7 @@ class _CreateRoomDialogState extends State<CreateRoomDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Create New Room'),
+      title: const Text("Create New Room"),
       content: SizedBox(
         height: 100,
         width: 300,
@@ -239,7 +267,7 @@ class _CreateRoomDialogState extends State<CreateRoomDialog> {
               mainAxisAlignment: .spaceBetween,
               spacing: 20,
               children: [
-                const Text('Room ID:', textAlign: .center),
+                const Text("Room ID:", textAlign: .center),
                 FutureBuilder<String>(
                   future: roomIdFuture,
                   builder: (context, snapshot) {
@@ -275,7 +303,7 @@ class _CreateRoomDialogState extends State<CreateRoomDialog> {
                     },
                     controller: _passwordController,
                     decoration: const InputDecoration(
-                      hintText: '4-digit PIN',
+                      hintText: "4-digit PIN",
                       hintMaxLines: 1,
                       border: .none,
                       isDense: true,
@@ -289,9 +317,9 @@ class _CreateRoomDialogState extends State<CreateRoomDialog> {
         ),
       ),
       actions: [
-        TextButton(child: const Text('OK'), onPressed: () => _submit()),
+        TextButton(child: const Text("OK"), onPressed: () => _submit()),
         TextButton(
-          child: const Text('Cancel'),
+          child: const Text("Cancel"),
           onPressed: () => Navigator.of(context).pop(false),
         ),
       ],
@@ -347,7 +375,7 @@ class _LeaveRoomDialogState extends State<LeaveRoomDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Leave room?'),
+      title: const Text("Leave room?"),
       content: SizedBox(
         height: 100,
         width: 300,
@@ -357,7 +385,7 @@ class _LeaveRoomDialogState extends State<LeaveRoomDialog> {
           },
           controller: _passwordController,
           decoration: const InputDecoration(
-            labelText: 'Enter password',
+            labelText: "Enter password",
             border: .none,
             isDense: true,
           ),
@@ -365,9 +393,9 @@ class _LeaveRoomDialogState extends State<LeaveRoomDialog> {
         ),
       ),
       actions: [
-        TextButton(child: const Text('OK'), onPressed: () => _submit()),
+        TextButton(child: const Text("OK"), onPressed: () => _submit()),
         TextButton(
-          child: const Text('Cancel'),
+          child: const Text("Cancel"),
           onPressed: () => Navigator.of(context).pop(false),
         ),
       ],

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:ournote/service.dart';
+import 'package:ournote/views/signup.dart';
 import 'package:ournote/views/user.dart';
 import 'package:ournote/models.dart';
 
@@ -15,7 +15,7 @@ class _LoginPageState extends State<LoginPage> {
   final apiService = ApiService();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  final _loginFormKey = GlobalKey<FormState>();
   Token? token;
   bool _isLoading = false;
 
@@ -25,19 +25,22 @@ class _LoginPageState extends State<LoginPage> {
 
     setState(() => _isLoading = true);
 
-    if (!_formKey.currentState!.validate()) {
+    if (!_loginFormKey.currentState!.validate()) {
       setState(() => _isLoading = false);
-      if (kDebugMode) {
-        debugPrint("not validated");
-      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Error! Failed to validate input")));
     }
 
     try {
       token = await apiService.getToken(username, password);
-    } on Exception catch (exception) {
-      setState(() => _isLoading = false);
-      if (kDebugMode) {
-        debugPrint("$exception");
+    } on Exception {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Failed to login")));
+        return;
       }
     }
 
@@ -45,11 +48,12 @@ class _LoginPageState extends State<LoginPage> {
 
     if (!mounted) return;
     if (token != null) {
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
           builder: (context) => UserView(token: token!, username: username),
         ),
+        (route) => false,
       );
     } else {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -71,15 +75,15 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(30.0),
+          padding: const EdgeInsets.fromLTRB(30.0, 0, 30.0, 30.0),
           child: Column(
             mainAxisAlignment: .center,
             crossAxisAlignment: .center,
             children: [
               const Text(
-                'Welcome',
+                "Welcome",
                 style: TextStyle(
-                  fontFamily: 'Poppins',
+                  fontFamily: "Poppins",
                   fontWeight: .bold,
                   fontSize: 26,
                   color: Color(0xFF1C1C1C),
@@ -87,9 +91,9 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Sign In to continue',
+                "Sign In to continue",
                 style: TextStyle(
-                  fontFamily: 'Poppins',
+                  fontFamily: "Poppins",
                   fontWeight: .normal,
                   fontSize: 18,
                   color: Color(0xFF1C1C1C),
@@ -97,27 +101,27 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 26),
               Form(
-                key: _formKey,
+                key: _loginFormKey,
                 child: Column(
                   children: [
                     TextFormField(
-                      validator: (String? value) {
+                      validator: (value) {
                         return value!.isEmpty ? "Enter a username" : null;
                       },
                       controller: _usernameController,
                       decoration: InputDecoration(
-                        labelText: 'Username',
+                        labelText: "Username",
                         border: OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
-                      validator: (String? value) {
+                      validator: (value) {
                         return value!.isEmpty ? "Enter a password" : null;
                       },
                       controller: _passwordController,
                       decoration: InputDecoration(
-                        labelText: 'Password',
+                        labelText: "Password",
                         border: OutlineInputBorder(),
                       ),
                       obscureText: true,
@@ -144,7 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               )
                             : const Text(
-                                'Login',
+                                "Login",
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
@@ -159,21 +163,35 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 26),
               const Center(
                 child: Text(
-                  'Forgot Password?',
+                  "Forgot Password?",
                   textAlign: .center,
                   style: TextStyle(fontSize: 14, color: Color(0xFF87879D)),
                 ),
               ),
               const SizedBox(height: 10),
-              const Center(
-                child: Text(
-                  "Don't have an account? Sign Up",
-                  textAlign: .center,
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14,
-                    color: Color(0xFF87879D),
-                  ),
+              Center(
+                child: Row(
+                  mainAxisAlignment: .center,
+                  children: [
+                    Text(
+                      "Don't have an account? ",
+                      textAlign: .center,
+                      style: TextStyle(
+                        fontFamily: "Poppins",
+                        fontSize: 14,
+                        color: Color(0xFF87879D),
+                      ),
+                    ),
+                    TextButton(
+                      child: Text("Sign Up"),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SignupPage(apiService: apiService),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
