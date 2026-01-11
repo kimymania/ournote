@@ -69,9 +69,9 @@ class _SignupPage extends State<SignupPage> {
 
     if (!_signupFormKey.currentState!.validate()) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Error! Failed to validate input")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error! Failed to validate input")),
+      );
     }
 
     try {
@@ -79,9 +79,9 @@ class _SignupPage extends State<SignupPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Error! Failed to create user")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Error! Failed to create user")),
+        );
       }
     }
 
@@ -172,14 +172,23 @@ class _SignupPage extends State<SignupPage> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text(
-                      "Sign Up and Login",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: .bold,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Text(
+                            "Sign Up and Login",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),

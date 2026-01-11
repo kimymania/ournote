@@ -10,9 +10,10 @@ class Token {
 
 class Room {
   final String id;
+  final String? name;
   final String? password;
 
-  const Room({required this.id, this.password});
+  const Room({required this.id, this.name, this.password});
 }
 
 class RoomsList {
@@ -26,7 +27,7 @@ class RoomsList {
       return RoomsList(list: roomsList);
     }
     for (Map<String, dynamic> data in json["rooms"]) {
-      Room room = Room(id: data["id"]!);
+      Room room = Room(id: data["id"], name: data["name"]);
       roomsList.add(room);
     }
     return RoomsList(list: roomsList);
@@ -61,7 +62,11 @@ class ItemsList {
 
     List<Item> itemsList = [];
     for (Map<String, dynamic> data in json["items"]) {
-      Item item = Item(id: data["id"], title: data["title"], content: data["content"]);
+      Item item = Item(
+        id: data["id"],
+        title: data["title"],
+        content: data["content"],
+      );
       itemsList.add(item);
     }
     return ItemsList(list: itemsList);

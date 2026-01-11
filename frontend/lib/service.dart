@@ -77,9 +77,11 @@ class ApiService {
         body: jsonEncode({"title": title, "content": content}),
       );
 
-      if (response.statusCode == 401 || response.statusCode == 403) {
+      if (response.statusCode == 201) {
+        return;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
         redirectToLoginPage();
-      } else if (response.statusCode != 200) {
+      } else {
         throw HttpException("Failed to update data");
       }
     } on SocketException {
@@ -160,10 +162,15 @@ class ApiService {
     }
   }
 
-  Future<void> createNewRoom(String roomID, String roomPW, Token token) async {
+  Future<void> createNewRoom(
+    String roomID,
+    String roomName,
+    String roomPW,
+    Token token,
+  ) async {
     final url = Uri.parse("$baseUrl/room/create");
     final headers = Token.getHeader(token);
-    final body = {"room_id": roomID, "room_pw": roomPW};
+    final body = {"room_id": roomID, "room_name": roomName, "room_pw": roomPW};
 
     try {
       final response = await http.post(url, headers: headers, body: body);

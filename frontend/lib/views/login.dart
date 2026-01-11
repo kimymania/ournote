@@ -27,9 +27,9 @@ class _LoginPageState extends State<LoginPage> {
 
     if (!_loginFormKey.currentState!.validate()) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Error! Failed to validate input")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error! Failed to validate input")),
+      );
     }
 
     try {
@@ -187,7 +187,8 @@ class _LoginPageState extends State<LoginPage> {
                       onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => SignupPage(apiService: apiService),
+                          builder: (context) =>
+                              SignupPage(apiService: apiService),
                         ),
                       ),
                     ),

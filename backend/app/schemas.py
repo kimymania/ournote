@@ -48,9 +48,15 @@ class RoomsList(GlobalBase):
 class Room(GlobalBase):
     model_config = ConfigDict(str_strip_whitespace=True)
     id: str
+    name: str | None = None
 
 
 class RoomPrivate(Room):
+    password: str
+
+
+class RoomCreate(Room):
+    name: str
     password: str
 
 

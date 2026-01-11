@@ -17,7 +17,7 @@ from app.crud import (
 )
 from app.dbmodels import Rooms
 from app.exceptions import AuthenticationError
-from app.schemas import ItemsList, Result, RoomPrivate
+from app.schemas import ItemsList, Result, RoomCreate
 
 
 def generate_room_id() -> Result:
@@ -35,12 +35,13 @@ def generate_room_id() -> Result:
 async def create_room(
     user_id: UUID,
     room_id: str,
+    room_name: str,
     room_pw: str,
     db: Session,
     auth: Authenticator,
 ) -> Result:
     """Create room and add user - room membership"""
-    room = RoomPrivate(id=room_id, password=auth.hash_password(room_pw))
+    room = RoomCreate(id=room_id, name=room_name, password=auth.hash_password(room_pw))
     data = Rooms(**room.model_dump())
     create_result = create_db(db, data)
     if not create_result.success:

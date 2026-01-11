@@ -49,7 +49,7 @@ def delete_db(db: Session, id: Any, **kwargs) -> Result:
     if table is None:
         raise DBError("Unknown type")
 
-    stmt = delete(table).where(table.id == id)
+    stmt = delete(table).where(table.id == id)  # type: ignore
     if isinstance(table, Items):
         room_id = kwargs["room_id"]
         stmt = stmt.where(table.room_id == room_id)
@@ -113,9 +113,15 @@ def insert_if_not_exists(db: Session, data: dict[str, Any]) -> Result:
 
 
 def get_user_rooms(db: Session, user_id: UUID) -> RoomsList:
-    stmt = select(RoomMem).where(RoomMem.c.user_id == user_id)
+    stmt = (
+        select(RoomMem, Rooms.name.label("room_name"))
+        .where(RoomMem.c.user_id == user_id)
+        .join(Rooms)
+    )
     result = db.execute(stmt).all()
-    rooms_list = RoomsList(rooms=[Room(id=r.room_id) for r in result] if result else None)
+    rooms_list = RoomsList(
+        rooms=[Room(id=r.room_id, name=r.room_name) for r in result] if result else None
+    )
     return rooms_list
 
 

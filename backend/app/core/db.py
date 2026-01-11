@@ -4,8 +4,9 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-SQLITE_URI = "sqlite:///local.db"
-engine = create_engine(SQLITE_URI, echo=True, connect_args={"check_same_thread": False})
+from app.core.config import settings
+
+engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI), echo=settings.dev)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 

@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Form
 
 from app.api.dependencies import AuthDep, SessionDep
-from app.constants import PWStringMetadata, UsernameStringMetadata
+from app.constants import NameStringMetadata, PWStringMetadata
 from app.core.security import get_current_user
 from app.exceptions import DBError, DuplicateDataError
 from app.schemas import RoomsList
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/user", tags=["user"])
 
 @router.post("/create", status_code=201)
 async def create_user(
-    username: Annotated[str, Form(...), UsernameStringMetadata],
+    username: Annotated[str, Form(...), NameStringMetadata],
     password: Annotated[str, Form(...), PWStringMetadata],
     auth: AuthDep,
     db: SessionDep,

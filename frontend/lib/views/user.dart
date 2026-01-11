@@ -22,12 +22,12 @@ class _UserViewState extends State<UserView> {
 
   // if room is deleted in room view, delete = true
   // this will trigger setState(() {}) for redraw
-  Future<bool?> _handleRoomView(String roomID) async {
+  Future<bool?> _handleRoomView(String roomID, String roomName) async {
     bool? delete = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) {
-          return RoomView(token: widget.token, roomID: roomID);
+          return RoomView(token: widget.token, roomID: roomID, roomName: roomName);
         },
       ),
     );
@@ -137,6 +137,7 @@ class _UserViewState extends State<UserView> {
                     itemCount: snapshot.data!.length,
                     itemBuilder: (context, index) {
                       String roomID = snapshot.data![index].id;
+                      String roomName = snapshot.data![index].name!;
                       ValueKey<Room> roomKey = ValueKey<Room>(snapshot.data![index]);
                       return Dismissible(
                         key: roomKey,
@@ -161,7 +162,7 @@ class _UserViewState extends State<UserView> {
                           child: InkWell(
                             splashColor: Colors.green.withAlpha(30),
                             onTap: () async {
-                              await _handleRoomView(roomID).then((value) {
+                              await _handleRoomView(roomID, roomName).then((value) {
                                 if (value!) {
                                   setState(() {});
                                 }
@@ -175,7 +176,7 @@ class _UserViewState extends State<UserView> {
                                   mainAxisAlignment: .center,
                                   children: [
                                     Text(
-                                      roomID,
+                                      roomName,
                                       style: const TextStyle(
                                         color: Color(0xFF1C1C1C),
                                         fontSize: 20,
@@ -220,6 +221,7 @@ class CreateRoomDialog extends StatefulWidget {
 }
 
 class _CreateRoomDialogState extends State<CreateRoomDialog> {
+  final _nameController = TextEditingController();
   final _passwordController = TextEditingController();
   late Future<String> roomIdFuture;
 
@@ -231,6 +233,7 @@ class _CreateRoomDialogState extends State<CreateRoomDialog> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -241,6 +244,7 @@ class _CreateRoomDialogState extends State<CreateRoomDialog> {
     try {
       await widget.apiService.createNewRoom(
         roomId,
+        _nameController.text,
         _passwordController.text,
         widget.token,
       );
@@ -265,28 +269,22 @@ class _CreateRoomDialogState extends State<CreateRoomDialog> {
           children: [
             Row(
               mainAxisAlignment: .spaceBetween,
-              spacing: 20,
               children: [
-                const Text("Room ID:", textAlign: .center),
-                FutureBuilder<String>(
-                  future: roomIdFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      return Text(
-                        snapshot.data!,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: .bold,
-                          color: Colors.red,
-                        ),
-                      );
-                    }
-                    return const SizedBox(
-                      width: 15,
-                      height: 15,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    );
-                  },
+                const Text("Name:"),
+                SizedBox(
+                  width: 100,
+                  child: TextFormField(
+                    validator: (String? value) {
+                      return value!.isEmpty ? "Enter a name" : null;
+                    },
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      hintText: "Room Name",
+                      hintMaxLines: 1,
+                      border: .none,
+                      isDense: true,
+                    ),
+                  ),
                 ),
               ],
             ),
