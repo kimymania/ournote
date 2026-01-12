@@ -1,9 +1,10 @@
 """SQLAlchemy database models"""
 
 import uuid
-from typing import List
+from typing import Any, List, Optional
 
 from sqlalchemy import Column, ForeignKey, Integer, String, Table, Uuid
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
@@ -40,7 +41,8 @@ class Items(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(32))
-    content: Mapped[str] = mapped_column(String())
+    content: Mapped[Optional[str]] = mapped_column(String(), nullable=True)
+    content_json: Mapped[list[Any]] = mapped_column(JSONB)
     room_id: Mapped[str] = mapped_column(
         String(8),
         ForeignKey("rooms.id", ondelete="CASCADE"),

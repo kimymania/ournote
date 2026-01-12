@@ -17,3 +17,6 @@ local.db-journal
 
 # Environment variables
 .env
+
+# local logs
+logs/

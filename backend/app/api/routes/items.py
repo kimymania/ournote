@@ -15,12 +15,12 @@ async def create_item(
     room_id: str,
     db: SessionDep,
     title: Annotated[str, Body(...)],
-    content: Annotated[str | None, Body()] = None,
+    content_json: Annotated[list, Body(...)],
 ):
     result = await service.create_item(
         room_id=room_id,
         title=title,
-        content=content,
+        content_json=content_json,
         db=db,
     )
     if result.success:
@@ -50,13 +50,13 @@ async def edit_item(
     item_id: int,
     db: SessionDep,
     title: Annotated[str, Body(...)],
-    content: Annotated[str, Body()] = "",
+    content_json: Annotated[list, Body(...)],
 ):
     result = await service.edit_item(
         room_id=room_id,
         item_id=item_id,
         title=title,
-        content=content,
+        content_json=content_json,
         db=db,
     )
     if result:
