@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form
+from fastapi import APIRouter, Body, Depends, Form
 
 from app.api.dependencies import AuthDep, SessionDep
 from app.constants import NameStringMetadata, PWStringMetadata, RoomIDMetadata, RoomPINMetadata
@@ -104,6 +104,23 @@ async def leave_room(
         room_id=room_id,
         db=db,
         auth=auth,
+    )
+    if result.success:
+        return
+    raise DBError
+
+
+@router.put("/{room_id}", status_code=200)
+async def edit_room_details(
+    _: Annotated[UUID, Depends(get_current_user)],
+    room_id: str,
+    room_name: Annotated[str, Body(...), NameStringMetadata],
+    db: SessionDep,
+):
+    result = await service.edit_room_details(
+        room_id=room_id,
+        room_name=room_name,
+        db=db,
     )
     if result.success:
         return

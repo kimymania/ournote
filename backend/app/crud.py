@@ -1,12 +1,10 @@
 from typing import Any, Type
 from uuid import UUID
 
-from sqlalchemy import delete, select
-from sqlalchemy.dialects.postgresql import insert as pg_insert
-from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy import delete, select, update
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
-from sqlalchemy.sql import update
 
 from app.dbmodels import Items, Rooms, Users
 from app.dbmodels import room_membership as RoomMem
@@ -94,13 +92,6 @@ def user_leave_room(db: Session, user_id: UUID, room_id: str) -> Result:
 
 
 def insert_if_not_exists(db: Session, data: dict[str, Any]) -> Result:
-    if not db.bind:  # Suppress db.bind.dialect linter error - should not happen
-        raise DBError("Session is corrupt")
-
-    if db.bind.dialect.name == "postgresql":
-        insert = pg_insert
-    else:
-        insert = sqlite_insert
     stmt = insert(RoomMem).values(**data)
     pkeys = [c.name for c in RoomMem.primary_key]
     try:
@@ -113,15 +104,9 @@ def insert_if_not_exists(db: Session, data: dict[str, Any]) -> Result:
 
 
 def get_user_rooms(db: Session, user_id: UUID) -> RoomsList:
-    stmt = (
-        select(RoomMem, Rooms.name.label("room_name"))
-        .where(RoomMem.c.user_id == user_id)
-        .join(Rooms)
-    )
+    stmt = select(RoomMem, Rooms.name.label("room_name")).where(RoomMem.c.user_id == user_id).join(Rooms)
     result = db.execute(stmt).all()
-    rooms_list = RoomsList(
-        rooms=[Room(id=r.room_id, name=r.room_name) for r in result] if result else None
-    )
+    rooms_list = RoomsList(rooms=[Room(id=r.room_id, name=r.room_name) for r in result] if result else None)
     return rooms_list
 
 
@@ -144,6 +129,12 @@ def get_all_room_items(db: Session, room_id: str) -> ItemsList:
     items = [Item(id=item[0], title=item[1]) for item in result]
     items_list = ItemsList(items=items)
     return items_list
+
+
+def edit_room_data(db: Session, room_id: str, room_name: str) -> Result:
+    stmt = update(Rooms).where(Rooms.id == room_id).values(name=room_name)
+    db.execute(stmt)
+    return Result(detail="room data edited")
 
 
 def get_item(db: Session, data: Items) -> Result:
