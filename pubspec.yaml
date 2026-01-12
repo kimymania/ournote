@@ -1,0 +1,6 @@
+name: ournote
+environment:
+  sdk: ^3.10.4
+
+workspace:
+  - frontend/*
