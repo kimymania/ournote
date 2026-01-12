@@ -53,6 +53,27 @@ class ApiService {
     }
   }
 
+  Future<void> deleteUser(String username, String password, Token token) async {
+    final url = Uri.parse("$baseUrl/user/$username");
+    final tokenHeader = Token.getHeader(token);
+    final headers = {
+      tokenHeader.keys.first: tokenHeader.values.first,
+      "Content-Type": "application/json",
+    };
+    final body = {"username": username, "password": password};
+
+    try {
+      final response = await http.delete(url, headers: headers, body: body);
+      if (response.statusCode == 200) {
+        return;
+      } else {
+        throw HttpException("Failed to delete user");
+      }
+    } on SocketException {
+      throw Exception("Connection failure");
+    }
+  }
+
   Future<String> generateRoomID() async {
     final url = Uri.parse("$baseUrl/room_id");
 
@@ -69,12 +90,16 @@ class ApiService {
     }
   }
 
-  Future<void> createNewItem(String roomID, String title, String content) async {
+  Future<void> createNewItem(
+    String roomID,
+    String title,
+    List<Map<String, dynamic>> contentJson,
+  ) async {
     try {
       final response = await http.post(
         Uri.parse("$baseUrl/room/$roomID/item/create"),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"title": title, "content": content}),
+        body: jsonEncode({"title": title, "content_json": contentJson}),
       );
 
       if (response.statusCode == 201) {
@@ -109,12 +134,17 @@ class ApiService {
     }
   }
 
-  Future<void> updateItem(String roomID, int itemID, String title, String content) async {
+  Future<void> updateItem(
+    String roomID,
+    int itemID,
+    String title,
+    List<Map<String, dynamic>> contentJson,
+  ) async {
     try {
       final response = await http.put(
         Uri.parse("$baseUrl/room/$roomID/item/$itemID"),
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"title": title, "content": content}),
+        body: jsonEncode({"title": title, "content_json": contentJson}),
       );
 
       if (response.statusCode == 401 || response.statusCode == 403) {

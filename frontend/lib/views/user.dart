@@ -60,6 +60,18 @@ class _UserViewState extends State<UserView> {
     return success ?? false;
   }
 
+  Future<bool> _showDeleteUserDialog() async {
+    final bool? success = await showDialog<bool>(
+      context: context,
+      builder: (_) => DeleteUserDialog(
+        apiService: apiService,
+        username: widget.username,
+        token: widget.token,
+      ),
+    );
+    return success ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,7 +103,7 @@ class _UserViewState extends State<UserView> {
               leading: const Icon(Icons.delete),
               title: const Text("Delete user", style: TextStyle(color: Colors.red)),
               onTap: () async {
-                // TODO: Connect to delete user api
+                _showDeleteUserDialog();
               },
             ),
           ],
@@ -374,6 +386,79 @@ class _LeaveRoomDialogState extends State<LeaveRoomDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text("Leave room?"),
+      content: SizedBox(
+        height: 100,
+        width: 300,
+        child: TextFormField(
+          validator: (String? value) {
+            return value!.isEmpty ? "Enter password" : null;
+          },
+          controller: _passwordController,
+          decoration: const InputDecoration(
+            labelText: "Enter password",
+            border: .none,
+            isDense: true,
+          ),
+          obscureText: true,
+        ),
+      ),
+      actions: [
+        TextButton(child: const Text("OK"), onPressed: () => _submit()),
+        TextButton(
+          child: const Text("Cancel"),
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+      ],
+    );
+  }
+}
+
+class DeleteUserDialog extends StatefulWidget {
+  final ApiService apiService;
+  final String username;
+  final Token token;
+
+  const DeleteUserDialog({
+    super.key,
+    required this.apiService,
+    required this.username,
+    required this.token,
+  });
+
+  @override
+  State<DeleteUserDialog> createState() => _DeleteUserDialog();
+}
+
+class _DeleteUserDialog extends State<DeleteUserDialog> {
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    try {
+      await widget.apiService.deleteUser(
+        widget.username,
+        _passwordController.text,
+        widget.token,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Error! Failed to delete user")));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Delete User?"),
       content: SizedBox(
         height: 100,
         width: 300,

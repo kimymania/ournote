@@ -23,10 +23,7 @@ class RoomView extends StatefulWidget {
 
 class _RoomViewState extends State<RoomView> {
   Future<List<Item>> _handleItemsList() async {
-    final ItemsList result = await apiService.fetchItemsList(
-      widget.roomID,
-      widget.token,
-    );
+    final ItemsList result = await apiService.fetchItemsList(widget.roomID, widget.token);
     final List<Item> itemList = result.list;
     return itemList;
   }
@@ -43,7 +40,8 @@ class _RoomViewState extends State<RoomView> {
           roomID: roomID,
           itemID: item.id,
           title: item.title,
-          content: item.content,
+          // content: item.content,
+          contentJson: item.contentJson,
           newItem: false,
         ),
       ),
@@ -58,7 +56,7 @@ class _RoomViewState extends State<RoomView> {
       context,
       MaterialPageRoute(
         builder: (context) =>
-            ItemView(roomID: widget.roomID, title: "New Item", content: ""),
+            ItemView(roomID: widget.roomID, title: "New Item", contentJson: []),
       ),
     ).then((value) {
       if (!mounted) return;
@@ -87,10 +85,7 @@ class _RoomViewState extends State<RoomView> {
         title: Text(widget.roomName, style: TextStyle(fontWeight: .bold)),
         centerTitle: false,
         actions: [
-          IconButton(
-            onPressed: () => _addNewItem(),
-            icon: const Icon(Icons.create),
-          ),
+          IconButton(onPressed: () => _addNewItem(), icon: const Icon(Icons.create)),
           IconButton(
             onPressed: () {
               roomScaffoldKey.currentState?.openEndDrawer();
@@ -112,10 +107,7 @@ class _RoomViewState extends State<RoomView> {
             ),
             ListTile(
               leading: const Icon(Icons.delete),
-              title: const Text(
-                "Delete room",
-                style: TextStyle(color: Colors.red),
-              ),
+              title: const Text("Delete room", style: TextStyle(color: Colors.red)),
               onTap: () async {
                 bool result = await _showDeleteDialog();
                 if (result) {
@@ -220,9 +212,7 @@ class _DeleteRoomDialog extends State<DeleteRoomDialog> {
     } catch (e) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error! Failed to delete room: ${e.toString()}"),
-        ),
+        SnackBar(content: Text("Error! Failed to delete room: ${e.toString()}")),
       );
     }
   }
