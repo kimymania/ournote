@@ -4,8 +4,6 @@ import 'package:ournote/models.dart';
 import 'package:ournote/service.dart';
 import 'package:ournote/views/item.dart';
 
-final apiService = ApiService();
-
 class RoomView extends StatefulWidget {
   final Token token;
   final String roomID;
@@ -77,6 +75,19 @@ class _RoomViewState extends State<RoomView> {
     return success ?? false;
   }
 
+  Future<bool> _showEditRoomDialog() async {
+    final bool? success = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (_) => EditRoomNameDialog(
+        apiService: apiService,
+        roomID: widget.roomID,
+        token: widget.token,
+      ),
+    );
+    return success ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,6 +111,21 @@ class _RoomViewState extends State<RoomView> {
         child: ListView(
           children: [
             DrawerHeader(child: const Text("Settings")),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text("Edit room settings"),
+              onTap: () async {
+                bool result = await _showEditRoomDialog();
+                if (result) {
+                  if (context.mounted) {
+                    Navigator.of(context).pop(true);
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text("Edited room data")));
+                  }
+                }
+              },
+            ),
             ListTile(
               leading: const Icon(Icons.mail),
               title: const Text("Invite member"),
@@ -235,6 +261,81 @@ class _DeleteRoomDialog extends State<DeleteRoomDialog> {
             isDense: true,
           ),
           obscureText: true,
+        ),
+      ),
+      actions: [
+        TextButton(child: const Text("OK"), onPressed: () => _submit()),
+        TextButton(
+          child: const Text("Cancel"),
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+      ],
+    );
+  }
+}
+
+class EditRoomNameDialog extends StatefulWidget {
+  final ApiService apiService;
+  final String roomID;
+  final Token token;
+  const EditRoomNameDialog({
+    super.key,
+    required this.apiService,
+    required this.roomID,
+    required this.token,
+  });
+
+  @override
+  State<EditRoomNameDialog> createState() => _EditRoomNameDialogState();
+}
+
+class _EditRoomNameDialogState extends State<EditRoomNameDialog> {
+  final _controller = TextEditingController();
+  String? newName;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final String newName = _controller.text;
+    try {
+      await widget.apiService.editRoomName(
+        widget.roomID,
+        newName,
+        widget.token,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error! Failed to edit room name: ${e.toString()}"),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Edit Room Name"),
+      content: SizedBox(
+        height: 80,
+        width: 300,
+        child: TextFormField(
+          validator: (String? value) {
+            return value!.isEmpty ? "Enter room name" : null;
+          },
+          controller: _controller,
+          decoration: const InputDecoration(
+            labelText: "Room Name",
+            border: .none,
+            isDense: true,
+          ),
         ),
       ),
       actions: [

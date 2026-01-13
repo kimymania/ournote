@@ -10,6 +10,7 @@ from app.core.security import Authenticator
 from app.crud import (
     create_db,
     delete_db,
+    edit_room_data,
     get_all_room_items,
     get_user_by_username,
     insert_if_not_exists,
@@ -98,4 +99,17 @@ async def leave_room(
     if user.id != user_id or not auth.verify_password(password, user.password):
         raise AuthenticationError()
     result = user_leave_room(db, user_id, room_id)
+    return result
+
+
+async def edit_room_details(
+    room_id: str,
+    room_name: str,
+    db: Session,
+) -> Result:
+    result = edit_room_data(
+        db=db,
+        room_id=room_id,
+        room_name=room_name,
+    )
     return result

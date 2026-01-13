@@ -159,7 +159,9 @@ class ApiService {
 
   Future<void> deleteItem(String roomID, int itemID) async {
     try {
-      final response = await http.delete(Uri.parse("$baseUrl/room/$roomID/item/$itemID"));
+      final response = await http.delete(
+        Uri.parse("$baseUrl/room/$roomID/item/$itemID"),
+      );
 
       if (response.statusCode == 200) {
         return;
@@ -178,7 +180,9 @@ class ApiService {
     try {
       final response = await http.get(url, headers: headers);
       if (response.statusCode == 200) {
-        final RoomsList roomsList = RoomsList.fromJson(jsonDecode(response.body));
+        final RoomsList roomsList = RoomsList.fromJson(
+          jsonDecode(response.body),
+        );
         final List<Room> parsedList = roomsList.list;
         return parsedList;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
@@ -217,6 +221,26 @@ class ApiService {
     }
   }
 
+  Future<void> editRoomName(String roomID, String newName, Token token) async {
+    final url = Uri.parse("$baseUrl/room/$roomID");
+    final headers = Token.getHeader(token);
+    final body = jsonEncode({"room_name": newName});
+
+    try {
+      final response = await http.put(url, headers: headers, body: body);
+      if (response.statusCode == 200) {
+        return;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        redirectToLoginPage();
+        throw HttpException("Session timed out");
+      } else {
+        throw HttpException("Failed to edit name");
+      }
+    } on SocketException {
+      throw Exception("Connection failure");
+    }
+  }
+
   Future<ItemsList> fetchItemsList(String roomID, Token token) async {
     final url = Uri.parse("$baseUrl/room/$roomID");
     final headers = Token.getHeader(token);
@@ -224,7 +248,9 @@ class ApiService {
     try {
       final response = await http.get(url, headers: headers);
       if (response.statusCode == 200) {
-        final ItemsList itemsList = ItemsList.fromJson(jsonDecode(response.body));
+        final ItemsList itemsList = ItemsList.fromJson(
+          jsonDecode(response.body),
+        );
         return itemsList;
       } else if (response.statusCode == 401 || response.statusCode == 403) {
         redirectToLoginPage();
@@ -254,7 +280,9 @@ class ApiService {
         throw Exception("wrong pin number");
       } else {
         int errorCode = response.statusCode;
-        throw Exception("errorCode=$errorCode, url=$url, headers=$headers, body=$body");
+        throw Exception(
+          "errorCode=$errorCode, url=$url, headers=$headers, body=$body",
+        );
       }
     } on SocketException {
       throw Exception("Connection failure");
@@ -282,7 +310,9 @@ class ApiService {
         throw Exception("wrong password");
       } else {
         int errorCode = response.statusCode;
-        throw Exception("errorCode=$errorCode, url=$url, headers=$headers, body=$body");
+        throw Exception(
+          "errorCode=$errorCode, url=$url, headers=$headers, body=$body",
+        );
       }
     } on SocketException {
       throw Exception("Connection failure");
