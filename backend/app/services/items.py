@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy.orm import Session
 
 from app.crud import create_db, delete_db, get_item, update_item
@@ -9,9 +11,9 @@ async def create_item(
     room_id: str,
     db: Session,
     title: str,
-    content: str | None = None,
+    content_json: list[Any],
 ) -> Result:
-    create = ItemModifier(title=title, content=content, room_id=room_id)
+    create = ItemModifier(title=title, content_json=content_json, room_id=room_id)
     data = Items(**create.model_dump())
     result = create_db(db, data)
     return result
@@ -34,9 +36,9 @@ async def edit_item(
     item_id: int,
     db: Session,
     title: str,
-    content: str | None = None,
+    content_json: list[Any],
 ) -> Item | None:
-    edit = ItemModifier(id=item_id, title=title, content=content, room_id=room_id)
+    edit = ItemModifier(id=item_id, title=title, content_json=content_json, room_id=room_id)
     data = Items(**edit.model_dump())
     result = update_item(db, data)
     item = result.data

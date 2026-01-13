@@ -68,6 +68,7 @@ class Item(GlobalBase):
     id: int | None = None
     title: str
     content: str | None = None
+    content_json: list | None = None
 
 
 class ItemModifier(Item):

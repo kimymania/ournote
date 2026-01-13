@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:ournote/service.dart';
 
 ApiService apiService = ApiService();
@@ -7,14 +8,16 @@ class ItemView extends StatefulWidget {
   final String roomID;
   final int? itemID;
   final String title;
-  final String? content;
+  // final String? content;
+  final List contentJson;
   final bool newItem;
   const ItemView({
     super.key,
     required this.roomID,
     this.itemID,
     required this.title,
-    required this.content,
+    // required this.content,
+    required this.contentJson,
     this.newItem = true,
   });
 
@@ -24,25 +27,25 @@ class ItemView extends StatefulWidget {
 
 class _ItemViewState extends State<ItemView> {
   late final _titleController = TextEditingController(text: widget.title);
-  late final _contentController = TextEditingController(text: widget.content);
+  final QuillController _controller = QuillController.basic();
 
   @override
   void dispose() {
     _titleController.dispose();
-    _contentController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
   void _saveNewItem() {
     String title = _titleController.text;
-    String content = _contentController.text;
-    apiService.createNewItem(widget.roomID, title, content);
+    List<Map<String, dynamic>> contentJson = _controller.document.toDelta().toJson();
+    apiService.createNewItem(widget.roomID, title, contentJson);
   }
 
   void _updateItem() {
     String title = _titleController.text;
-    String content = _contentController.text;
-    apiService.updateItem(widget.roomID, widget.itemID!, title, content);
+    List<Map<String, dynamic>> contentJson = _controller.document.toDelta().toJson();
+    apiService.updateItem(widget.roomID, widget.itemID!, title, contentJson);
   }
 
   @override
@@ -78,19 +81,18 @@ class _ItemViewState extends State<ItemView> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+      body: SafeArea(
+        minimum: const EdgeInsets.symmetric(horizontal: 8.0),
         child: Column(
-          mainAxisAlignment: .start,
-          crossAxisAlignment: .start,
           children: [
+            QuillSimpleToolbar(
+              controller: _controller,
+              config: const QuillSimpleToolbarConfig(multiRowsDisplay: false),
+            ),
             Expanded(
-              child: TextField(
-                controller: _contentController,
-                decoration: InputDecoration.collapsed(
-                  hintText: "Enter content...",
-                  hintStyle: TextStyle(color: Colors.white70),
-                ),
+              child: QuillEditor.basic(
+                controller: _controller,
+                config: const QuillEditorConfig(),
               ),
             ),
           ],

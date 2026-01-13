@@ -142,17 +142,17 @@ def get_item(db: Session, data: Items) -> Result:
     result = db.execute(stmt).scalar_one_or_none()
     if result is None:
         return Result(success=False, detail="item doesn't exist")
-    item = Item(id=result.id, title=result.title, content=result.content)
+    item = Item(id=result.id, title=result.title, content_json=result.content_json)
     return Result(detail="item found", data=item)
 
 
 def update_item(db: Session, data: Items) -> Result:
-    item = Item(id=data.id, title=data.title, content=data.content)
+    item = Item(id=data.id, title=data.title, content_json=data.content_json)
     stmt = (
         update(Items)
         .where(Items.room_id == data.room_id)
         .where(Items.id == data.id)
-        .values(title=data.title, content=data.content)
+        .values(title=data.title, content_json=data.content_json)
     )
     try:
         db.execute(stmt)
