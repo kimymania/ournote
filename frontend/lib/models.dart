@@ -51,7 +51,6 @@ class Item {
     return Item(
       id: json["id"] as int,
       title: json["title"] as String,
-      content: json["content"] as String,
       contentJson: json["content_json"] as List,
     );
   }
@@ -72,7 +71,6 @@ class ItemsList {
       Item item = Item(
         id: data["id"],
         title: data["title"],
-        content: data["content"],
         contentJson: data["content_json"],
       );
       itemsList.add(item);

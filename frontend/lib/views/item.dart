@@ -27,7 +27,38 @@ class ItemView extends StatefulWidget {
 
 class _ItemViewState extends State<ItemView> {
   late final _titleController = TextEditingController(text: widget.title);
-  final QuillController _controller = QuillController.basic();
+  late final QuillController _controller = QuillController.basic();
+  final toolbarConfig = const QuillSimpleToolbarConfig(
+    multiRowsDisplay: false,
+    showDividers: false,
+    showFontFamily: false,
+    showFontSize: false,
+    showStrikeThrough: false,
+    showInlineCode: false,
+    showColorButton: false,
+    showBackgroundColorButton: false,
+    showClearFormat: false,
+    showAlignmentButtons: false,
+    showLeftAlignment: false,
+    showCenterAlignment: false,
+    showRightAlignment: false,
+    showJustifyAlignment: false,
+    showCodeBlock: false,
+    showLink: false,
+    showUndo: false,
+    showRedo: false,
+    showSearchButton: false,
+    showSubscript: false,
+    showSuperscript: false,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.contentJson.isNotEmpty) {
+      _controller.document = Document.fromJson(widget.contentJson);
+    }
+  }
 
   @override
   void dispose() {
@@ -72,6 +103,8 @@ class _ItemViewState extends State<ItemView> {
         ),
         toolbarHeight: kToolbarHeight,
         actions: [
+          IconButton(icon: const Icon(Icons.undo), onPressed: () => _controller.undo()),
+          IconButton(icon: const Icon(Icons.redo), onPressed: () => _controller.redo()),
           IconButton(
             onPressed: () {
               widget.newItem ? _saveNewItem() : _updateItem();
@@ -85,14 +118,14 @@ class _ItemViewState extends State<ItemView> {
         minimum: const EdgeInsets.symmetric(horizontal: 8.0),
         child: Column(
           children: [
-            QuillSimpleToolbar(
-              controller: _controller,
-              config: const QuillSimpleToolbarConfig(multiRowsDisplay: false),
-            ),
+            QuillSimpleToolbar(controller: _controller, config: toolbarConfig),
             Expanded(
               child: QuillEditor.basic(
                 controller: _controller,
-                config: const QuillEditorConfig(),
+                config: const QuillEditorConfig(
+                  padding: EdgeInsets.symmetric(horizontal: 16.0),
+                  autoFocus: true,
+                ),
               ),
             ),
           ],

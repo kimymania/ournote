@@ -7,7 +7,6 @@ PIN_PATTERN = r"\d"
 
 NameStringMetadata = StringConstraints(
     strip_whitespace=True,
-    to_lower=True,
     strict=True,
     min_length=2,
     max_length=16,

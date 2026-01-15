@@ -104,9 +104,15 @@ def insert_if_not_exists(db: Session, data: dict[str, Any]) -> Result:
 
 
 def get_user_rooms(db: Session, user_id: UUID) -> RoomsList:
-    stmt = select(RoomMem, Rooms.name.label("room_name")).where(RoomMem.c.user_id == user_id).join(Rooms)
+    stmt = (
+        select(RoomMem, Rooms.name.label("room_name"))
+        .where(RoomMem.c.user_id == user_id)
+        .join(Rooms)
+    )
     result = db.execute(stmt).all()
-    rooms_list = RoomsList(rooms=[Room(id=r.room_id, name=r.room_name) for r in result] if result else None)
+    rooms_list = RoomsList(
+        rooms=[Room(id=r.room_id, name=r.room_name) for r in result] if result else None
+    )
     return rooms_list
 
 
@@ -122,18 +128,21 @@ def get_room(db: Session, room_id: str) -> RoomPrivate:
 
 def get_all_room_items(db: Session, room_id: str) -> ItemsList:
     """:returns: list of all items in room"""
-    stmt = select(Items.id, Items.title).where(Items.room_id == room_id)
-    result = db.execute(stmt).all()
-    if len(result) == 0:
-        return ItemsList()
-    items = [Item(id=item[0], title=item[1]) for item in result]
+    stmt = select(Items).where(Items.room_id == room_id)
+    result = db.execute(stmt).scalars()
+    items = [Item(id=item.id, title=item.title, content_json=item.content_json) for item in result]
     items_list = ItemsList(items=items)
     return items_list
 
 
 def edit_room_data(db: Session, room_id: str, room_name: str) -> Result:
     stmt = update(Rooms).where(Rooms.id == room_id).values(name=room_name)
-    db.execute(stmt)
+    try:
+        db.execute(stmt)
+        db.commit()
+    except SQLAlchemyError as e:
+        db.rollback()
+        return Result(success=False, detail="DB operation failure", data=e, status_code=500)
     return Result(detail="room data edited")
 
 
