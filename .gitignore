@@ -20,3 +20,6 @@ local.db-journal
 
 # local logs
 logs/
+
+# macOS-specific files
+.DS_Store
