@@ -15,7 +15,6 @@ class Base(DeclarativeBase):
 
 
 def init_db(**kwargs):
-    Base.metadata.drop_all(bind=engine)
     if "engine" in kwargs.keys():
         Base.metadata.create_all(bind=kwargs["engine"])
     Base.metadata.create_all(bind=engine)
