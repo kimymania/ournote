@@ -1,0 +1,5 @@
+.venv
+
+# uv-related files
+.python-version
+uv.lock
