@@ -27,7 +27,12 @@ class _UserViewState extends State<UserView> {
       context,
       MaterialPageRoute(
         builder: (context) {
-          return RoomView(token: widget.token, roomID: roomID, roomName: roomName);
+          return RoomView(
+            token: widget.token,
+            roomID: roomID,
+            roomName: roomName,
+            username: widget.username,
+          );
         },
       ),
     );
@@ -38,7 +43,8 @@ class _UserViewState extends State<UserView> {
     final bool? success = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => CreateRoomDialog(apiService: apiService, token: widget.token),
+      builder: (_) =>
+          CreateRoomDialog(apiService: apiService, token: widget.token),
     );
 
     if (success == true) {
@@ -80,7 +86,10 @@ class _UserViewState extends State<UserView> {
         title: const Text("Dashboard", style: TextStyle(fontWeight: .bold)),
         centerTitle: false,
         actions: [
-          IconButton(onPressed: () => _showCreateDialog(), icon: const Icon(Icons.add)),
+          IconButton(
+            onPressed: () => _showCreateDialog(),
+            icon: const Icon(Icons.add),
+          ),
           IconButton(
             onPressed: () {
               userScaffoldKey.currentState?.openEndDrawer();
@@ -101,7 +110,10 @@ class _UserViewState extends State<UserView> {
             ),
             ListTile(
               leading: const Icon(Icons.delete),
-              title: const Text("Delete user", style: TextStyle(color: Colors.red)),
+              title: const Text(
+                "Delete user",
+                style: TextStyle(color: Colors.red),
+              ),
               onTap: () async {
                 _showDeleteUserDialog();
               },
@@ -136,7 +148,10 @@ class _UserViewState extends State<UserView> {
                               const Icon(Icons.add),
                               const Text(
                                 "Create a new room",
-                                style: TextStyle(color: Colors.grey, fontStyle: .italic),
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontStyle: .italic,
+                                ),
                               ),
                             ],
                           ),
@@ -150,14 +165,19 @@ class _UserViewState extends State<UserView> {
                     itemBuilder: (context, index) {
                       String roomID = snapshot.data![index].id;
                       String roomName = snapshot.data![index].name!;
-                      ValueKey<Room> roomKey = ValueKey<Room>(snapshot.data![index]);
+                      ValueKey<Room> roomKey = ValueKey<Room>(
+                        snapshot.data![index],
+                      );
                       return Dismissible(
                         key: roomKey,
                         background: Container(
                           color: Colors.red,
                           alignment: .centerRight,
                           padding: const EdgeInsets.only(right: 20),
-                          child: const Icon(Icons.remove_circle, color: Colors.white),
+                          child: const Icon(
+                            Icons.remove_circle,
+                            color: Colors.white,
+                          ),
                         ),
                         direction: .endToStart,
                         confirmDismiss: (direction) async {
@@ -166,7 +186,9 @@ class _UserViewState extends State<UserView> {
                         onDismissed: (direction) {
                           setState(() => snapshot.data!.removeAt(index));
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Left room ${roomKey.value.id}")),
+                            SnackBar(
+                              content: Text("Left room ${roomKey.value.id}"),
+                            ),
                           );
                         },
                         child: Card(
@@ -174,7 +196,9 @@ class _UserViewState extends State<UserView> {
                           child: InkWell(
                             splashColor: Colors.green.withAlpha(30),
                             onTap: () async {
-                              await _handleRoomView(roomID, roomName).then((value) {
+                              await _handleRoomView(roomID, roomName).then((
+                                value,
+                              ) {
                                 if (value!) {
                                   setState(() {});
                                 }
@@ -226,7 +250,11 @@ class CreateRoomDialog extends StatefulWidget {
   final ApiService apiService;
   final Token token;
 
-  const CreateRoomDialog({super.key, required this.apiService, required this.token});
+  const CreateRoomDialog({
+    super.key,
+    required this.apiService,
+    required this.token,
+  });
 
   @override
   State<CreateRoomDialog> createState() => _CreateRoomDialogState();
@@ -264,9 +292,9 @@ class _CreateRoomDialogState extends State<CreateRoomDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Error! Failed to create room")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error! Failed to create room")),
+      );
     }
   }
 
@@ -376,9 +404,9 @@ class _LeaveRoomDialogState extends State<LeaveRoomDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Error! Failed to leave room")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error! Failed to leave room")),
+      );
     }
   }
 
@@ -449,9 +477,9 @@ class _DeleteUserDialog extends State<DeleteUserDialog> {
       Navigator.of(context).pop(true);
     } catch (e) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Error! Failed to delete user")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error! Failed to delete user")),
+      );
     }
   }
 

@@ -114,7 +114,7 @@ async def leave_room(
 async def edit_room_details(
     _: Annotated[UUID, Depends(get_current_user)],
     room_id: str,
-    room_name: Annotated[str, Body(...), NameStringMetadata],
+    room_name: Annotated[str, Body(..., embed=True), NameStringMetadata],
     db: SessionDep,
 ):
     result = await service.edit_room_details(

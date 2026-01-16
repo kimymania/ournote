@@ -3,16 +3,19 @@ import 'package:ournote/globals.dart';
 import 'package:ournote/models.dart';
 import 'package:ournote/service.dart';
 import 'package:ournote/views/item.dart';
+import 'package:ournote/views/user.dart';
 
 class RoomView extends StatefulWidget {
   final Token token;
   final String roomID;
   final String roomName;
+  final String username;
   const RoomView({
     super.key,
     required this.token,
     required this.roomID,
     required this.roomName,
+    required this.username,
   });
 
   @override
@@ -21,7 +24,10 @@ class RoomView extends StatefulWidget {
 
 class _RoomViewState extends State<RoomView> {
   Future<List<Item>> _handleItemsList() async {
-    final ItemsList result = await apiService.fetchItemsList(widget.roomID, widget.token);
+    final ItemsList result = await apiService.fetchItemsList(
+      widget.roomID,
+      widget.token,
+    );
     final List<Item> itemList = result.list;
     return itemList;
   }
@@ -96,7 +102,10 @@ class _RoomViewState extends State<RoomView> {
         title: Text(widget.roomName, style: TextStyle(fontWeight: .bold)),
         centerTitle: false,
         actions: [
-          IconButton(onPressed: () => _addNewItem(), icon: const Icon(Icons.create)),
+          IconButton(
+            onPressed: () => _addNewItem(),
+            icon: const Icon(Icons.create),
+          ),
           IconButton(
             onPressed: () {
               roomScaffoldKey.currentState?.openEndDrawer();
@@ -133,12 +142,23 @@ class _RoomViewState extends State<RoomView> {
             ),
             ListTile(
               leading: const Icon(Icons.delete),
-              title: const Text("Delete room", style: TextStyle(color: Colors.red)),
+              title: const Text(
+                "Delete room",
+                style: TextStyle(color: Colors.red),
+              ),
               onTap: () async {
                 bool result = await _showDeleteDialog();
                 if (result) {
                   if (context.mounted) {
-                    Navigator.of(context).pop(true);
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (context) => UserView(
+                          token: widget.token,
+                          username: widget.username,
+                        ),
+                      ),
+                      (route) => false,
+                    );
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text("Deleted room ${widget.roomID}")),
                     );
@@ -238,7 +258,9 @@ class _DeleteRoomDialog extends State<DeleteRoomDialog> {
     } catch (e) {
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error! Failed to delete room: ${e.toString()}")),
+        SnackBar(
+          content: Text("Error! Failed to delete room: ${e.toString()}"),
+        ),
       );
     }
   }
@@ -291,7 +313,6 @@ class EditRoomNameDialog extends StatefulWidget {
 
 class _EditRoomNameDialogState extends State<EditRoomNameDialog> {
   final _controller = TextEditingController();
-  String? newName;
 
   @override
   void dispose() {

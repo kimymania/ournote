@@ -34,12 +34,12 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       token = await apiService.getToken(username, password);
-    } on Exception {
+    } on Exception catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Failed to login")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to login ${e.toString()}")),
+        );
         return;
       }
     }
